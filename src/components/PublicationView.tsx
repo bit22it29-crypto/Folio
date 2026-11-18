@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { User } from 'firebase/auth';
 import {
   ArrowLeft,
   Bookmark,
@@ -7,6 +8,7 @@ import {
   Crown,
   Heart,
   Lock,
+  MessageSquare,
   Pin,
   Rss,
 } from 'lucide-react';
@@ -17,37 +19,54 @@ import type {
   Publication,
   ReadingProgress,
   Subscription,
+  UserProfile,
 } from '../types/folio';
 import { EditorialImage } from './EditorialImage';
+import { PublicationChatPanel } from './PublicationChatPanel';
 
 interface PublicationViewProps {
   publication: Publication;
+  allPublications: Publication[];
   posts: Post[];
   subscription?: Subscription;
+  subscribedPubIds: Set<string>;
+  commentCounts: Map<string, number>;
   likedPostIds: Set<string>;
   bookmarkedPostIds: Set<string>;
   readingProgressMap: Map<string, ReadingProgress>;
+  user: User | null;
+  profile: UserProfile | null;
   onNavigate: (route: AppRoute) => void;
   onToggleSubscribe: (pub: Publication) => void;
   onOpenMembershipCheckout: (pub: Publication) => void;
   onToggleLike: (post: Post) => void;
   onToggleBookmark: (post: Post) => void;
+  onSignIn: () => void;
+  onNotify: (msg: string) => void;
 }
 
 export function PublicationView({
   publication,
+  allPublications,
   posts,
   subscription,
+  subscribedPubIds,
+  commentCounts,
   likedPostIds,
   bookmarkedPostIds,
   readingProgressMap,
+  user,
+  profile,
   onNavigate,
   onToggleSubscribe,
   onOpenMembershipCheckout,
   onToggleLike,
   onToggleBookmark,
+  onSignIn,
+  onNotify,
 }: PublicationViewProps) {
   const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [activeTab, setActiveTab] = useState<'archive' | 'chat'>('archive');
 
   const isSubscribed = Boolean(subscription);
   const isSupporting = subscription?.tier === 'supporting';
@@ -58,6 +77,10 @@ export function PublicationView({
   const archivePosts = pinnedPost
     ? posts.filter((p) => p.id !== pinnedPost.id)
     : posts;
+
+  const recommendedPubs = (publication.recommendedPubIds || [])
+    .map((id) => allPublications.find((p) => p.id === id))
+    .filter((p): p is Publication => Boolean(p && p.id !== publication.id));
 
   const handleCopyEmbed = async () => {
     const pubUrl = `${window.location.origin}/?pub=${encodeURIComponent(publication.slug)}`;
@@ -124,7 +147,7 @@ export function PublicationView({
             <button
               type="button"
               onClick={() => onToggleSubscribe(publication)}
-              className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+              className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
                 isSubscribed
                   ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[var(--accent-border)]'
                   : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
@@ -134,7 +157,7 @@ export function PublicationView({
             </button>
 
             {isSupporting ? (
-              <span className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg border border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]">
+              <span className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg border border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)] whitespace-nowrap">
                 <Crown className="w-4 h-4" />
                 <span>Supporting Member</span>
               </span>
@@ -142,7 +165,7 @@ export function PublicationView({
               <button
                 type="button"
                 onClick={() => onOpenMembershipCheckout(publication)}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border border-[var(--accent-border)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-accent)] hover:bg-[var(--bg-active-soft)] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border border-[var(--accent-border)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-accent)] hover:bg-[var(--bg-active-soft)] transition-colors whitespace-nowrap cursor-pointer"
               >
                 <Crown className="w-4 h-4" />
                 <span>Upgrade to Supporting ($7/mo)</span>
@@ -153,7 +176,7 @@ export function PublicationView({
               href={`/api/publications/${encodeURIComponent(publication.slug)}/rss.xml`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors whitespace-nowrap"
             >
               <Rss className="w-4 h-4 text-[var(--text-accent-soft)]" />
               <span>RSS Feed</span>
@@ -162,7 +185,7 @@ export function PublicationView({
             <button
               type="button"
               onClick={handleCopyEmbed}
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors whitespace-nowrap cursor-pointer"
             >
               {copiedEmbed ? (
                 <>
@@ -191,8 +214,49 @@ export function PublicationView({
         )}
       </section>
 
-      {/* Pinned Featured Issue */}
-      {pinnedPost && (
+      {/* Publication Section Switcher */}
+      <div className="mt-8 border-b border-[var(--border-hairline)] flex items-center gap-6">
+        <button
+          type="button"
+          onClick={() => setActiveTab('archive')}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            activeTab === 'archive'
+              ? 'border-[var(--accent-solid)] text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          Published Archive
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('chat')}
+          className={`inline-flex items-center gap-1.5 pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            activeTab === 'chat'
+              ? 'border-[var(--accent-solid)] text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 text-[var(--text-accent-soft)]" />
+          <span>Subscriber Chat</span>
+        </button>
+      </div>
+
+      {activeTab === 'chat' ? (
+        <PublicationChatPanel
+          publication={publication}
+          subscription={subscription}
+          user={user}
+          profile={profile}
+          onNavigate={onNavigate}
+          onToggleSubscribe={onToggleSubscribe}
+          onOpenMembershipCheckout={onOpenMembershipCheckout}
+          onSignIn={onSignIn}
+          onNotify={onNotify}
+        />
+      ) : (
+        <>
+          {/* Pinned Featured Issue */}
+          {pinnedPost && (
         <section className="mt-8 p-6 rounded-2xl border border-[var(--accent-border)]/60 bg-[var(--bg-surface)] flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex-1 min-w-0">
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-accent)] mb-2">
@@ -223,6 +287,10 @@ export function PublicationView({
               >
                 Read Pinned Issue
               </button>
+              <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)] tabular-nums">
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>{commentCounts.get(pinnedPost.id) || 0}</span>
+              </span>
               {pinnedPost.tags &&
                 pinnedPost.tags.map((t) => (
                   <button
@@ -279,6 +347,7 @@ export function PublicationView({
           <div className="divide-y divide-[var(--border-hairline)]">
             {archivePosts.map((post) => {
               const prog = readingProgressMap.get(post.id);
+              const commentsCount = commentCounts.get(post.id) || 0;
               return (
                 <article
                   key={post.id}
@@ -346,6 +415,15 @@ export function PublicationView({
                       </button>
                       <button
                         type="button"
+                        onClick={() => onNavigate({ view: 'post', postId: post.id })}
+                        aria-label={`${commentsCount} comments`}
+                        className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>{commentsCount}</span>
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => onToggleBookmark(post)}
                         className={`inline-flex items-center gap-1 cursor-pointer ${
                           bookmarkedPostIds.has(post.id) ? 'text-[var(--text-accent)] font-medium' : ''
@@ -392,6 +470,72 @@ export function PublicationView({
           </div>
         )}
       </section>
+        </>
+      )}
+
+      {/* Recommended Publications Cross-Promotion */}
+      {recommendedPubs.length > 0 && (
+        <section className="mt-12 pt-8 border-t border-[var(--border-hairline)]">
+          <div className="flex items-baseline justify-between mb-5">
+            <div>
+              <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)]">
+                Recommended by {publication.name}
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Independent publications endorsed by {publication.ownerName}.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {recommendedPubs.map((rec) => {
+              const isRecSubscribed = subscribedPubIds.has(rec.id);
+              return (
+                <div
+                  key={rec.id}
+                  className="p-5 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] flex items-start justify-between gap-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="text-[11px] font-semibold mb-1"
+                      style={{ color: rec.accentColor || '#7C3AED' }}
+                    >
+                      {rec.category}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onNavigate({ view: 'publication', slug: rec.slug })
+                      }
+                      className="font-display text-lg font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] text-left cursor-pointer block truncate w-full"
+                    >
+                      {rec.name}
+                    </button>
+                    <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mt-1 mb-2">
+                      {rec.tagline}
+                    </p>
+                    <p className="text-[11px] text-[var(--text-muted)] tabular-nums">
+                      By {rec.ownerName} · {rec.subscriberCount.toLocaleString()} subscribers
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onToggleSubscribe(rec)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                      isRecSubscribed
+                        ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[var(--accent-border)]'
+                        : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
+                    }`}
+                  >
+                    {isRecSubscribed ? 'Subscribed' : 'Subscribe'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

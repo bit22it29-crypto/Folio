@@ -1,14 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { Bookmark as BookmarkIcon, Crown, Highlighter, Lock, Trash2 } from 'lucide-react';
+import {
+  Bookmark as BookmarkIcon,
+  BookOpen,
+  Crown,
+  Download,
+  Highlighter,
+  Lock,
+  Trash2,
+  UserCheck,
+} from 'lucide-react';
 import {
   getUserDigestFrequency,
   updateSubscriptionTier,
   updateUserDigestFrequency,
 } from '../lib/firestoreService';
-import { formatEditorialDate } from '../lib/markdown';
+import { formatEditorialDate, formatRelativeTime } from '../lib/markdown';
 import type {
   AppRoute,
+  AuthorFollow,
   Bookmark,
   DigestFrequency,
   Highlight,
@@ -22,6 +32,7 @@ import { EditorialImage } from './EditorialImage';
 interface SubscriptionsViewProps {
   user: User | null;
   subscriptions: Subscription[];
+  followedAuthors: AuthorFollow[];
   bookmarks: Bookmark[];
   highlights: Highlight[];
   readingProgressMap: Map<string, ReadingProgress>;
@@ -29,6 +40,7 @@ interface SubscriptionsViewProps {
   posts: Post[];
   onNavigate: (route: AppRoute) => void;
   onToggleSubscribe: (pub: Publication) => void;
+  onToggleFollowAuthor: (authorId: string, authorName: string) => void;
   onOpenMembershipCheckout: (pub: Publication) => void;
   onToggleBookmark: (post: Post) => void;
   onDeleteHighlight: (highlightId: string) => void;
@@ -39,6 +51,7 @@ interface SubscriptionsViewProps {
 export function SubscriptionsView({
   user,
   subscriptions,
+  followedAuthors,
   bookmarks,
   highlights,
   readingProgressMap,
@@ -46,13 +59,16 @@ export function SubscriptionsView({
   posts,
   onNavigate,
   onToggleSubscribe,
+  onToggleFollowAuthor,
   onOpenMembershipCheckout,
   onToggleBookmark,
   onDeleteHighlight,
   onSignIn,
   onNotify,
 }: SubscriptionsViewProps) {
-  const [tab, setTab] = useState<'inbox' | 'saved' | 'highlights' | 'manage'>('inbox');
+  const [tab, setTab] = useState<'inbox' | 'reading' | 'saved' | 'highlights' | 'manage'>(
+    'inbox'
+  );
   const [digestFrequency, setDigestFrequency] = useState<DigestFrequency>('immediate');
   const [savingDigest, setSavingDigest] = useState(false);
 
@@ -78,6 +94,22 @@ export function SubscriptionsView({
     return posts.filter((p) => subPubIds.has(p.publicationId));
   }, [posts, subscriptions]);
 
+  const continueReadingItems = useMemo(() => {
+    const items: Array<{ post: Post; progress: ReadingProgress }> = [];
+    readingProgressMap.forEach((progress) => {
+      if (progress.percent < 3) return;
+      const post = postMap.get(progress.postId);
+      if (post) {
+        items.push({ post, progress });
+      }
+    });
+    return items.sort(
+      (a, b) =>
+        (b.progress.updatedAt?.getTime() || 0) -
+        (a.progress.updatedAt?.getTime() || 0)
+    );
+  }, [readingProgressMap, postMap]);
+
   const handleDigestChange = async (next: DigestFrequency) => {
     if (!user) return;
     setDigestFrequency(next);
@@ -88,6 +120,46 @@ export function SubscriptionsView({
     } finally {
       setSavingDigest(false);
     }
+  };
+
+  const handleExportHighlights = () => {
+    if (highlights.length === 0) return;
+    const grouped = new Map<string, Highlight[]>();
+    highlights.forEach((hl) => {
+      const key = `${hl.postTitle} — ${hl.publicationName}`;
+      const list = grouped.get(key) || [];
+      list.push(hl);
+      grouped.set(key, list);
+    });
+
+    const lines: string[] = [
+      '# Folio Highlights & Margin Notes',
+      `Exported on ${new Date().toLocaleDateString()}`,
+      '',
+    ];
+    grouped.forEach((items, title) => {
+      lines.push(`## ${title}`, '');
+      items.forEach((item) => {
+        lines.push(`> “${item.quote}”`);
+        if (item.note) {
+          lines.push(`- **Margin note:** ${item.note}`);
+        }
+        lines.push(`- *Saved ${formatEditorialDate(item.createdAt)}*`, '');
+      });
+    });
+
+    const blob = new Blob([lines.join('\n')], {
+      type: 'text/markdown;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'folio-highlights.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    onNotify(`Exported ${highlights.length} highlights to Markdown.`);
   };
 
   if (!user) {
@@ -112,24 +184,26 @@ export function SubscriptionsView({
 
   return (
     <main className="max-w-[960px] mx-auto px-4 sm:px-6 py-10 pb-24">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border-hairline)] mb-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[var(--border-hairline)] mb-8">
         <div>
           <h1 className="font-display text-3xl sm:text-4xl font-semibold text-[var(--text-primary)] mb-1">
             Library
           </h1>
           <p className="text-sm text-[var(--text-muted)] tabular-nums">
-            Following {subscriptions.length}{' '}
+            {subscriptions.length}{' '}
             {subscriptions.length === 1 ? 'publication' : 'publications'} ·{' '}
+            {followedAuthors.length}{' '}
+            {followedAuthors.length === 1 ? 'writer' : 'writers'} ·{' '}
             {bookmarks.length} saved · {highlights.length}{' '}
             {highlights.length === 1 ? 'highlight' : 'highlights'}
           </p>
         </div>
 
-        <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg self-start overflow-x-auto">
+        <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg self-start overflow-x-auto max-w-full">
           <button
             type="button"
             onClick={() => setTab('inbox')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               tab === 'inbox'
                 ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -139,8 +213,19 @@ export function SubscriptionsView({
           </button>
           <button
             type="button"
+            onClick={() => setTab('reading')}
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer tabular-nums ${
+              tab === 'reading'
+                ? 'bg-[var(--accent-solid)] text-white'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            Continue ({continueReadingItems.length})
+          </button>
+          <button
+            type="button"
             onClick={() => setTab('saved')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer tabular-nums ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer tabular-nums ${
               tab === 'saved'
                 ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -151,7 +236,7 @@ export function SubscriptionsView({
           <button
             type="button"
             onClick={() => setTab('highlights')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer tabular-nums ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer tabular-nums ${
               tab === 'highlights'
                 ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -162,48 +247,18 @@ export function SubscriptionsView({
           <button
             type="button"
             onClick={() => setTab('manage')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer tabular-nums ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer tabular-nums ${
               tab === 'manage'
                 ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
-            Manage ({subscriptions.length})
+            Manage ({subscriptions.length + followedAuthors.length})
           </button>
         </div>
       </div>
 
-      {tab === 'manage' && (
-        <section className="mb-8 p-5 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">
-              Newsletter Delivery Cadence
-            </h2>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              Stored privately in your reader account preferences.
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg">
-            {(['immediate', 'daily', 'weekly'] as const).map((freq) => (
-              <button
-                key={freq}
-                type="button"
-                disabled={savingDigest}
-                onClick={() => handleDigestChange(freq)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md capitalize transition-colors cursor-pointer ${
-                  digestFrequency === freq
-                    ? 'bg-[var(--accent-solid)] text-white'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                {freq}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {tab === 'highlights' ? (
+      {tab === 'highlights' && (
         highlights.length === 0 ? (
           <div className="border border-[var(--border-hairline)] rounded-xl p-10 bg-[var(--bg-surface)] text-center">
             <Highlighter className="w-8 h-8 text-[var(--text-accent-soft)] mx-auto mb-3" />
@@ -223,23 +278,55 @@ export function SubscriptionsView({
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4 pb-2">
+              <p className="text-xs text-[var(--text-muted)] tabular-nums">
+                {highlights.length} {highlights.length === 1 ? 'passage' : 'passages'} saved across your reading
+              </p>
+              <button
+                type="button"
+                onClick={handleExportHighlights}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-primary)] hover:border-[var(--accent-border)] cursor-pointer whitespace-nowrap"
+              >
+                <Download className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" />
+                <span>Export Highlights (.md)</span>
+              </button>
+            </div>
+
             {highlights.map((hl) => {
-              const borderAccent =
+              const dotClass =
                 hl.color === 'amber'
-                  ? 'border-l-amber-500'
+                  ? 'bg-amber-500'
                   : hl.color === 'emerald'
-                  ? 'border-l-emerald-500'
-                  : 'border-l-[#8B5CF6]';
+                  ? 'bg-emerald-500'
+                  : 'bg-[#8B5CF6]';
+              const colorLabel =
+                hl.color === 'amber'
+                  ? 'Amber'
+                  : hl.color === 'emerald'
+                  ? 'Emerald'
+                  : 'Purple';
               return (
                 <article
                   key={hl.id}
-                  className={`p-5 rounded-xl border border-[var(--border-hairline)] border-l-4 ${borderAccent} bg-[var(--bg-surface)]`}
+                  className="p-5 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)]"
                 >
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="min-w-0">
-                      <p className="text-xs text-[var(--text-accent-soft)]">
-                        {hl.publicationName}
-                      </p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${dotClass}`}
+                          aria-hidden="true"
+                        />
+                        <span className="text-[11px] font-medium text-[var(--text-muted)]">
+                          {colorLabel}
+                        </span>
+                        <span className="text-xs text-[var(--text-muted)]" aria-hidden="true">
+                          ·
+                        </span>
+                        <p className="text-xs text-[var(--text-accent-soft)] truncate">
+                          {hl.publicationName}
+                        </p>
+                      </div>
                       <button
                         type="button"
                         onClick={() => onNavigate({ view: 'post', postId: hl.postId })}
@@ -273,7 +360,96 @@ export function SubscriptionsView({
             })}
           </div>
         )
-      ) : tab === 'saved' ? (
+      )}
+
+      {tab === 'reading' && (
+        continueReadingItems.length === 0 ? (
+          <div className="border border-[var(--border-hairline)] rounded-xl p-10 bg-[var(--bg-surface)] text-center">
+            <BookOpen className="w-8 h-8 text-[var(--text-accent-soft)] mx-auto mb-3" />
+            <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-2">
+              No active reading history yet
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto mb-6">
+              As you read essays across Folio, your reading progress syncs automatically so you can pick up right where you left off.
+            </p>
+            <button
+              type="button"
+              onClick={() => onNavigate({ view: 'explore' })}
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+            >
+              Start Reading
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-[var(--border-hairline)]">
+            {continueReadingItems.map(({ post, progress }) => (
+              <article
+                key={post.id}
+                className="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-muted)] mb-1.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onNavigate({
+                          view: 'publication',
+                          slug: post.publicationSlug,
+                        })
+                      }
+                      className="font-semibold text-[var(--text-accent)] hover:underline cursor-pointer"
+                    >
+                      {post.publicationName}
+                    </button>
+                    <span aria-hidden="true">·</span>
+                    <span>{post.authorName}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{post.readTimeMinutes} min read</span>
+                    {progress.updatedAt && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>Last read {formatRelativeTime(progress.updatedAt)}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] leading-snug mb-2">
+                    <button
+                      type="button"
+                      onClick={() => onNavigate({ view: 'post', postId: post.id })}
+                      className="text-left hover:text-[var(--text-accent)] transition-colors cursor-pointer"
+                    >
+                      {post.title}
+                    </button>
+                  </h2>
+
+                  <div className="flex items-center gap-3 max-w-sm">
+                    <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-surface-alt)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--accent-solid)] rounded-full transition-[width]"
+                        style={{ width: `${progress.percent}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-[var(--text-accent)] tabular-nums shrink-0">
+                      {progress.percent >= 95 ? 'Finished' : `${progress.percent}%`}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate({ view: 'post', postId: post.id })}
+                  className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap self-start sm:self-center cursor-pointer"
+                >
+                  {progress.percent >= 95 ? 'Re-read Essay' : 'Resume Reading'}
+                </button>
+              </article>
+            ))}
+          </div>
+        )
+      )}
+
+      {tab === 'saved' && (
         bookmarks.length === 0 ? (
           <div className="border border-[var(--border-hairline)] rounded-xl p-10 bg-[var(--bg-surface)] text-center">
             <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-2">
@@ -435,24 +611,26 @@ export function SubscriptionsView({
             })}
           </div>
         )
-      ) : subscriptions.length === 0 ? (
-        <div className="border border-[var(--border-hairline)] rounded-xl p-10 bg-[var(--bg-surface)] text-center">
-          <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-2">
-            No subscriptions yet
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto mb-6">
-            Explore publications across technology, architecture, economics, and natural history to start building your reading list.
-          </p>
-          <button
-            type="button"
-            onClick={() => onNavigate({ view: 'explore' })}
-            className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
-          >
-            Browse Dispatches
-          </button>
-        </div>
-      ) : tab === 'inbox' ? (
-        inboxPosts.length === 0 ? (
+      )}
+
+      {tab === 'inbox' && (
+        subscriptions.length === 0 ? (
+          <div className="border border-[var(--border-hairline)] rounded-xl p-10 bg-[var(--bg-surface)] text-center">
+            <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-2">
+              No subscriptions yet
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto mb-6">
+              Explore publications across technology, architecture, economics, and natural history to start building your reading list.
+            </p>
+            <button
+              type="button"
+              onClick={() => onNavigate({ view: 'explore' })}
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+            >
+              Browse Dispatches
+            </button>
+          </div>
+        ) : inboxPosts.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)] py-8">
             Your subscribed publications haven’t published any issues yet.
           </p>
@@ -546,82 +724,170 @@ export function SubscriptionsView({
             })}
           </div>
         )
-      ) : (
-        <div className="divide-y divide-[var(--border-hairline)]">
-          {subscriptions.map((sub) => {
-            const pub = pubMap.get(sub.publicationId);
-            return (
-              <div
-                key={sub.id}
-                className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
+      )}
+
+      {tab === 'manage' && (
+        <div className="space-y-10">
+          <section className="p-5 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+                Newsletter Delivery Cadence
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Stored privately in your reader account preferences.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg">
+              {(['immediate', 'daily', 'weekly'] as const).map((freq) => (
+                <button
+                  key={freq}
+                  type="button"
+                  disabled={savingDigest}
+                  onClick={() => handleDigestChange(freq)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md capitalize transition-colors cursor-pointer ${
+                    digestFrequency === freq
+                      ? 'bg-[var(--accent-solid)] text-white'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {freq}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-display text-xl font-semibold text-[var(--text-primary)] pb-3 border-b border-[var(--border-hairline)] mb-2">
+              Publication Subscriptions ({subscriptions.length})
+            </h2>
+            {subscriptions.length === 0 ? (
+              <p className="text-sm text-[var(--text-muted)] py-4">
+                You haven’t subscribed to any publications yet.
+              </p>
+            ) : (
+              <div className="divide-y divide-[var(--border-hairline)]">
+                {subscriptions.map((sub) => {
+                  const pub = pubMap.get(sub.publicationId);
+                  return (
+                    <div
+                      key={sub.id}
+                      className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onNavigate({
+                                view: 'publication',
+                                slug: sub.publicationSlug,
+                              })
+                            }
+                            className="font-display text-lg font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] cursor-pointer"
+                          >
+                            {sub.publicationName}
+                          </button>
+                          {sub.tier === 'supporting' && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded border border-[var(--accent-border)] text-[var(--text-accent)]">
+                              <Crown className="w-2.5 h-2.5" />
+                              Supporting
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5 tabular-nums">
+                          Joined {formatEditorialDate(sub.createdAt)} · Current tier:{' '}
+                          <span className="font-medium text-[var(--text-accent)]">
+                            {sub.tier === 'supporting' ? 'Supporting' : 'Free'}
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        {sub.tier === 'supporting' ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await updateSubscriptionTier(sub.id, 'free');
+                              onNotify(`Switched ${sub.publicationName} to free tier.`);
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
+                          >
+                            Switch to Free
+                          </button>
+                        ) : (
+                          pub && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenMembershipCheckout(pub)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--accent-border)] bg-[var(--bg-active-soft)] rounded-lg text-[var(--text-accent)] hover:bg-[var(--accent-solid)] hover:text-white transition-colors cursor-pointer"
+                            >
+                              <Crown className="w-3.5 h-3.5" />
+                              <span>Upgrade to Supporting</span>
+                            </button>
+                          )
+                        )}
+
+                        {pub && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleSubscribe(pub)}
+                            className="px-3 py-1.5 text-xs font-medium border border-[var(--border-danger)] bg-[var(--bg-danger-soft)] rounded-lg text-[var(--text-danger)] hover:bg-[var(--bg-danger-hover)] transition-colors cursor-pointer"
+                          >
+                            Unsubscribe
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="font-display text-xl font-semibold text-[var(--text-primary)] pb-3 border-b border-[var(--border-hairline)] mb-2">
+              Followed Writers ({followedAuthors.length})
+            </h2>
+            {followedAuthors.length === 0 ? (
+              <p className="text-sm text-[var(--text-muted)] py-4">
+                Follow writers from any essay or writer profile to track their dispatches and Salon notes.
+              </p>
+            ) : (
+              <div className="divide-y divide-[var(--border-hairline)]">
+                {followedAuthors.map((follow) => (
+                  <div
+                    key={follow.id}
+                    className="py-4 flex items-center justify-between gap-4"
+                  >
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onNavigate({ view: 'author', authorId: follow.authorId })
+                        }
+                        className="font-display text-lg font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] cursor-pointer text-left truncate block"
+                      >
+                        {follow.authorName}
+                      </button>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                        Following since {formatEditorialDate(follow.createdAt)}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={() =>
-                        onNavigate({
-                          view: 'publication',
-                          slug: sub.publicationSlug,
-                        })
+                        onToggleFollowAuthor(follow.authorId, follow.authorName)
                       }
-                      className="font-display text-lg font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-secondary)] hover:border-[var(--border-danger)] hover:text-[var(--text-danger)] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      {sub.publicationName}
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Following</span>
                     </button>
-                    {sub.tier === 'supporting' && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded border border-[var(--accent-border)] text-[var(--text-accent)]">
-                        <Crown className="w-2.5 h-2.5" />
-                        Supporting
-                      </span>
-                    )}
                   </div>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5 tabular-nums">
-                    Joined {formatEditorialDate(sub.createdAt)} · Current tier:{' '}
-                    <span className="font-medium text-[var(--text-accent)]">
-                      {sub.tier === 'supporting' ? 'Supporting' : 'Free'}
-                    </span>
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  {sub.tier === 'supporting' ? (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await updateSubscriptionTier(sub.id, 'free');
-                        onNotify(`Switched ${sub.publicationName} to free tier.`);
-                      }}
-                      className="px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
-                    >
-                      Switch to Free
-                    </button>
-                  ) : (
-                    pub && (
-                      <button
-                        type="button"
-                        onClick={() => onOpenMembershipCheckout(pub)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--accent-border)] bg-[var(--bg-active-soft)] rounded-lg text-[var(--text-accent)] hover:bg-[var(--accent-solid)] hover:text-white transition-colors cursor-pointer"
-                      >
-                        <Crown className="w-3.5 h-3.5" />
-                        <span>Upgrade to Supporting</span>
-                      </button>
-                    )
-                  )}
-
-                  {pub && (
-                    <button
-                      type="button"
-                      onClick={() => onToggleSubscribe(pub)}
-                      className="px-3 py-1.5 text-xs font-medium border border-[var(--border-danger)] bg-[var(--bg-danger-soft)] rounded-lg text-[var(--text-danger)] hover:bg-[var(--bg-danger-hover)] transition-colors cursor-pointer"
-                    >
-                      Unsubscribe
-                    </button>
-                  )}
-                </div>
+                ))}
               </div>
-            );
-          })}
+            )}
+          </section>
         </div>
       )}
     </main>

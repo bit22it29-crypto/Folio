@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Bookmark, Heart, Lock } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bookmark,
+  Heart,
+  Lock,
+  MessageSquare,
+  UserCheck,
+  UserPlus,
+} from 'lucide-react';
 import { getAuthorPublicProfile } from '../lib/firestoreService';
 import { formatEditorialDate, formatRelativeTime } from '../lib/markdown';
 import type {
@@ -14,13 +22,18 @@ import { EditorialImage } from './EditorialImage';
 
 interface AuthorProfileViewProps {
   authorId: string;
+  currentUserId?: string;
   publications: Publication[];
   posts: Post[];
   notes: Note[];
   subscriptions: Subscription[];
+  isFollowing: boolean;
+  followerCount: number;
+  commentCounts: Map<string, number>;
   likedPostIds: Set<string>;
   bookmarkedPostIds: Set<string>;
   onNavigate: (route: AppRoute) => void;
+  onToggleFollowAuthor: (authorId: string, authorName: string) => void;
   onToggleSubscribe: (pub: Publication) => void;
   onToggleLike: (post: Post) => void;
   onToggleBookmark: (post: Post) => void;
@@ -28,13 +41,18 @@ interface AuthorProfileViewProps {
 
 export function AuthorProfileView({
   authorId,
+  currentUserId,
   publications,
   posts,
   notes,
   subscriptions,
+  isFollowing,
+  followerCount,
+  commentCounts,
   likedPostIds,
   bookmarkedPostIds,
   onNavigate,
+  onToggleFollowAuthor,
   onToggleSubscribe,
   onToggleLike,
   onToggleBookmark,
@@ -118,11 +136,43 @@ export function AuthorProfileView({
             <span className="text-[var(--text-muted)] tabular-nums">
               {authorPosts.length} {authorPosts.length === 1 ? 'essay' : 'essays'}
             </span>
+            <span className="text-[var(--text-muted)]" aria-hidden="true">
+              ·
+            </span>
+            <span className="text-[var(--text-accent)] font-medium tabular-nums">
+              {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
+            </span>
           </div>
 
-          <h1 className="font-display text-3xl sm:text-4xl font-semibold text-[var(--text-primary)] mb-2">
-            {displayName}
-          </h1>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+            <h1 className="font-display text-3xl sm:text-4xl font-semibold text-[var(--text-primary)]">
+              {displayName}
+            </h1>
+
+            {currentUserId !== authorId && (
+              <button
+                type="button"
+                onClick={() => onToggleFollowAuthor(authorId, displayName)}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  isFollowing
+                    ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
+                    : 'border-transparent bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
+                }`}
+              >
+                {isFollowing ? (
+                  <>
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Follow Writer</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl">{bio}</p>
         </div>
       </section>
@@ -251,6 +301,16 @@ export function AuthorProfileView({
                           }`}
                         />
                         <span>{post.likesCount}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onNavigate({ view: 'post', postId: post.id })}
+                        className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                        aria-label="View responses"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>{commentCounts.get(post.id) || 0}</span>
                       </button>
 
                       <button

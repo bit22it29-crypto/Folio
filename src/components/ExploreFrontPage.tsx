@@ -1,5 +1,16 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, Bookmark, Heart, Lock, Search } from 'lucide-react';
+import type { User } from 'firebase/auth';
+import {
+  ArrowRight,
+  Bookmark,
+  Hash,
+  Heart,
+  Lock,
+  MessageSquare,
+  Search,
+  UserCheck,
+  UserPlus,
+} from 'lucide-react';
 import { formatEditorialDate, formatRelativeTime } from '../lib/markdown';
 import {
   CATEGORIES,
@@ -14,35 +25,49 @@ import {
 import { EditorialImage } from './EditorialImage';
 
 interface ExploreFrontPageProps {
+  user: User | null;
   posts: Post[];
   publications: Publication[];
   notes: Note[];
   subscriptions: Subscription[];
+  followedAuthorIds: Set<string>;
+  authorFollowerCounts: Map<string, number>;
+  commentCounts: Map<string, number>;
   likedPostIds: Set<string>;
   bookmarkedPostIds: Set<string>;
   readingProgressMap: Map<string, ReadingProgress>;
   onNavigate: (route: AppRoute) => void;
   onToggleSubscribe: (pub: Publication) => void;
+  onToggleFollowAuthor: (authorId: string, authorName: string) => void;
   onToggleLike: (post: Post) => void;
   onToggleBookmark: (post: Post) => void;
+  onSignIn: () => void;
 }
 
 export function ExploreFrontPage({
+  user,
   posts,
   publications,
   notes,
   subscriptions,
+  followedAuthorIds,
+  authorFollowerCounts,
+  commentCounts,
   likedPostIds,
   bookmarkedPostIds,
   readingProgressMap,
   onNavigate,
   onToggleSubscribe,
+  onToggleFollowAuthor,
   onToggleLike,
   onToggleBookmark,
+  onSignIn,
 }: ExploreFrontPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<'All' | Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortMode, setSortMode] = useState<'featured' | 'latest' | 'subscribers'>('featured');
+  const [sortMode, setSortMode] = useState<
+    'featured' | 'for_you' | 'following' | 'latest' | 'subscribers'
+  >('featured');
 
   const subMap = useMemo(() => {
     const map = new Map<string, Subscription>();
@@ -50,12 +75,36 @@ export function ExploreFrontPage({
     return map;
   }, [subscriptions]);
 
+  // Build reader affinity profile from real subscriptions, follows, likes, and bookmarks
+  const preferredInterests = useMemo(() => {
+    const catWeights = new Map<string, number>();
+    const tagWeights = new Map<string, number>();
+    subscriptions.forEach((s) => {
+      const pub = publications.find((p) => p.id === s.publicationId);
+      if (pub) catWeights.set(pub.category, (catWeights.get(pub.category) || 0) + 3);
+    });
+    posts.forEach((p) => {
+      if (likedPostIds.has(p.id) || bookmarkedPostIds.has(p.id)) {
+        catWeights.set(p.category, (catWeights.get(p.category) || 0) + 2);
+        (p.tags || []).forEach((t) => {
+          tagWeights.set(t, (tagWeights.get(t) || 0) + 2);
+        });
+      }
+    });
+    return { catWeights, tagWeights };
+  }, [subscriptions, publications, posts, likedPostIds, bookmarkedPostIds]);
+
   const filteredPosts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const matched = posts.filter((post) => {
       const catMatch = selectedCategory === 'All' || post.category === selectedCategory;
       if (!catMatch) return false;
       if (sortMode === 'subscribers' && post.accessTier !== 'subscribers') return false;
+      if (sortMode === 'following') {
+        const isSub = subMap.has(post.publicationId);
+        const isFollow = followedAuthorIds.has(post.authorId);
+        if (!isSub && !isFollow) return false;
+      }
       if (!q) return true;
       return (
         post.title.toLowerCase().includes(q) ||
@@ -66,9 +115,33 @@ export function ExploreFrontPage({
       );
     });
 
+    if (sortMode === 'for_you') {
+      return [...matched].sort((a, b) => {
+        const scorePost = (p: Post) => {
+          let score = 0;
+          if (subMap.has(p.publicationId)) score += 12;
+          if (followedAuthorIds.has(p.authorId)) score += 10;
+          score += preferredInterests.catWeights.get(p.category) || 0;
+          (p.tags || []).forEach((t) => {
+            score += preferredInterests.tagWeights.get(t) || 0;
+          });
+          score += Math.min(8, p.likesCount + (commentCounts.get(p.id) || 0) * 2);
+          return score;
+        };
+        const diff = scorePost(b) - scorePost(a);
+        if (diff !== 0) return diff;
+        return (
+          ((b.publishedAt || b.createdAt)?.getTime() || 0) -
+          ((a.publishedAt || a.createdAt)?.getTime() || 0)
+        );
+      });
+    }
+
     if (sortMode === 'featured') {
       return [...matched].sort((a, b) => {
-        if (b.likesCount !== a.likesCount) return b.likesCount - a.likesCount;
+        const engA = a.likesCount + (commentCounts.get(a.id) || 0) * 2;
+        const engB = b.likesCount + (commentCounts.get(b.id) || 0) * 2;
+        if (engB !== engA) return engB - engA;
         return (
           ((b.publishedAt || b.createdAt)?.getTime() || 0) -
           ((a.publishedAt || a.createdAt)?.getTime() || 0)
@@ -80,7 +153,68 @@ export function ExploreFrontPage({
         ((b.publishedAt || b.createdAt)?.getTime() || 0) -
         ((a.publishedAt || a.createdAt)?.getTime() || 0)
     );
-  }, [posts, selectedCategory, searchQuery, sortMode]);
+  }, [
+    posts,
+    selectedCategory,
+    searchQuery,
+    sortMode,
+    subMap,
+    followedAuthorIds,
+    preferredInterests,
+    commentCounts,
+  ]);
+
+  const trendingTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    posts.forEach((p) => {
+      (p.tags || []).forEach((t) => {
+        counts.set(t, (counts.get(t) || 0) + 1);
+      });
+    });
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+  }, [posts]);
+
+  const featuredWriters = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: string; name: string; avatar: string; pubName: string; essayCount: number }
+    >();
+    posts.forEach((p) => {
+      const existing = map.get(p.authorId);
+      if (existing) {
+        existing.essayCount += 1;
+      } else {
+        map.set(p.authorId, {
+          id: p.authorId,
+          name: p.authorName,
+          avatar: p.authorAvatar,
+          pubName: p.publicationName,
+          essayCount: 1,
+        });
+      }
+    });
+    publications.forEach((pub) => {
+      if (!map.has(pub.ownerId)) {
+        map.set(pub.ownerId, {
+          id: pub.ownerId,
+          name: pub.ownerName,
+          avatar: '',
+          pubName: pub.name,
+          essayCount: 0,
+        });
+      }
+    });
+    return Array.from(map.values())
+      .filter((w) => !user || w.id !== user.uid)
+      .sort(
+        (a, b) =>
+          (authorFollowerCounts.get(b.id) || 0) - (authorFollowerCounts.get(a.id) || 0) ||
+          b.essayCount - a.essayCount
+      )
+      .slice(0, 4);
+  }, [posts, publications, user, authorFollowerCounts]);
 
   const featuredPublications = useMemo(() => {
     return [...publications]
@@ -217,6 +351,16 @@ export function ExploreFrontPage({
                         }`}
                       />
                       <span>{leadPost.likesCount}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onNavigate({ view: 'post', postId: leadPost.id })}
+                      aria-label={`${commentCounts.get(leadPost.id) || 0} responses`}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-white/20 bg-[#09090D]/60 text-[#E4E1EF] hover:border-[#A78BFA] transition-colors cursor-pointer tabular-nums"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>{commentCounts.get(leadPost.id) || 0}</span>
                     </button>
 
                     <button
@@ -474,40 +618,29 @@ export function ExploreFrontPage({
             />
           </div>
 
-          <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg shrink-0">
-            <button
-              type="button"
-              onClick={() => setSortMode('featured')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
-                sortMode === 'featured'
-                  ? 'bg-[var(--accent-solid)] text-white'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Featured
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortMode('latest')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
-                sortMode === 'latest'
-                  ? 'bg-[var(--accent-solid)] text-white'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Latest
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortMode('subscribers')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
-                sortMode === 'subscribers'
-                  ? 'bg-[var(--accent-solid)] text-white'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Subscribers
-            </button>
+          <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg shrink-0 overflow-x-auto">
+            {(
+              [
+                { id: 'featured', label: 'Featured' },
+                { id: 'for_you', label: 'For You' },
+                { id: 'following', label: 'Following' },
+                { id: 'latest', label: 'Latest' },
+                { id: 'subscribers', label: 'Subscribers' },
+              ] as const
+            ).map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => setSortMode(mode.id)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+                  sortMode === mode.id
+                    ? 'bg-[var(--accent-solid)] text-white'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {mode.label}
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -516,22 +649,40 @@ export function ExploreFrontPage({
       {filteredPosts.length === 0 ? (
         <section className="py-20 text-center">
           <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-2">
-            No matching issues found
+            {sortMode === 'following' && !user
+              ? 'Sign in to see your Following feed'
+              : sortMode === 'following'
+              ? 'Your Following feed is quiet'
+              : 'No matching issues found'}
           </h2>
-          <p className="text-sm text-[var(--text-muted)] mb-6">
-            Try clearing your search filter or switching to another topic.
+          <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto mb-6">
+            {sortMode === 'following' && !user
+              ? 'Follow independent writers and subscribe to publications to build a tailored reading stream.'
+              : sortMode === 'following'
+              ? 'Subscribe to a publication above or follow writers to gather their essays here.'
+              : 'Try clearing your search filter or switching to another topic.'}
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCategory('All');
-              setSearchQuery('');
-              setSortMode('featured');
-            }}
-            className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
-          >
-            Reset Filters
-          </button>
+          {sortMode === 'following' && !user ? (
+            <button
+              type="button"
+              onClick={onSignIn}
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+            >
+              Sign In with Google
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory('All');
+                setSearchQuery('');
+                setSortMode('featured');
+              }}
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+            >
+              {sortMode === 'following' ? 'Browse Featured Issues' : 'Reset Filters'}
+            </button>
+          )}
         </section>
       ) : (
         <section className="pt-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -633,6 +784,15 @@ export function ExploreFrontPage({
                         </button>
                         <button
                           type="button"
+                          onClick={() => onNavigate({ view: 'post', postId: post.id })}
+                          className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                          aria-label="View comments"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>{commentCounts.get(post.id) || 0}</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => onToggleBookmark(post)}
                           className={`inline-flex items-center gap-1 cursor-pointer ${
                             bookmarkedPostIds.has(post.id)
@@ -719,6 +879,98 @@ export function ExploreFrontPage({
                 ))}
               </div>
             </div>
+
+            {featuredWriters.length > 0 && (
+              <div className="bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-2xl p-6">
+                <h2 className="font-display text-xl font-semibold text-[var(--text-primary)] pb-3 border-b border-[var(--border-hairline)] mb-4">
+                  Writers to Follow
+                </h2>
+                <div className="space-y-4">
+                  {featuredWriters.map((w) => {
+                    const isFollowing = followedAuthorIds.has(w.id);
+                    const followers = authorFollowerCounts.get(w.id) || 0;
+                    return (
+                      <div key={w.id} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {w.avatar ? (
+                            <img
+                              src={w.avatar}
+                              alt={w.name}
+                              referrerPolicy="no-referrer"
+                              className="w-8 h-8 rounded-full object-cover border border-[var(--border-hairline)] shrink-0"
+                            />
+                          ) : (
+                            <span className="w-8 h-8 rounded-full bg-[var(--accent-solid)] text-white text-xs font-medium flex items-center justify-center shrink-0">
+                              {w.name.slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                          <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onNavigate({ view: 'author', authorId: w.id })
+                              }
+                              className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] truncate block text-left cursor-pointer"
+                            >
+                              {w.name}
+                            </button>
+                            <p className="text-[11px] text-[var(--text-muted)] truncate tabular-nums">
+                              {w.pubName} · {followers}{' '}
+                              {followers === 1 ? 'follower' : 'followers'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggleFollowAuthor(w.id, w.name)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                            isFollowing
+                              ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
+                              : 'border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-primary)] hover:border-[var(--accent-border)]'
+                          }`}
+                        >
+                          {isFollowing ? (
+                            <>
+                              <UserCheck className="w-3 h-3" />
+                              <span>Following</span>
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="w-3 h-3" />
+                              <span>Follow</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {trendingTags.length > 0 && (
+              <div className="bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-2xl p-6">
+                <div className="flex items-center gap-2 pb-3 border-b border-[var(--border-hairline)] mb-4">
+                  <Hash className="w-4 h-4 text-[var(--text-accent-soft)]" />
+                  <h2 className="font-display text-xl font-semibold text-[var(--text-primary)]">
+                    Recommended Topics
+                  </h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {trendingTags.map(([tag, count]) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => onNavigate({ view: 'topic', tag })}
+                      className="px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-accent)] transition-colors cursor-pointer tabular-nums"
+                    >
+                      #{tag} · {count}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </aside>
         </section>
       )}

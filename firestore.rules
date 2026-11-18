@@ -68,7 +68,7 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'id', 'ownerId', 'ownerName', 'slug', 'name', 'tagline',
           'description', 'category', 'accentColor', 'coverImageUrl',
-          'pinnedPostId', 'welcomeNote',
+          'pinnedPostId', 'welcomeNote', 'recommendedPubIds',
           'subscriberCount', 'createdAt', 'updatedAt'
         ])
         && isValidId(data.id)
@@ -84,6 +84,7 @@ service cloud.firestore {
         && data.coverImageUrl is string && data.coverImageUrl.size() <= 500
         && (!('pinnedPostId' in data) || data.pinnedPostId == null || isValidId(data.pinnedPostId))
         && isOptionalString(data, 'welcomeNote', 500)
+        && (!('recommendedPubIds' in data) || (data.recommendedPubIds is list && data.recommendedPubIds.size() <= 4 && (data.recommendedPubIds.size() == 0 || isValidId(data.recommendedPubIds[0]))))
         && data.subscriberCount is int && data.subscriberCount >= 0
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
@@ -202,7 +203,9 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'id', 'authorId', 'authorName', 'authorHandle', 'authorAvatar',
           'publicationId', 'publicationName', 'publicationSlug',
-          'body', 'quotedPostId', 'quotedPostTitle', 'likesCount', 'createdAt'
+          'body', 'quotedPostId', 'quotedPostTitle',
+          'restackedNoteId', 'restackedAuthorName', 'restackedBody',
+          'likesCount', 'editedAt', 'createdAt'
         ])
         && isValidId(data.id)
         && data.id == noteId
@@ -216,7 +219,38 @@ service cloud.firestore {
         && data.body is string && data.body.size() >= 1 && data.body.size() <= 600
         && isOptionalString(data, 'quotedPostId', 128)
         && isOptionalString(data, 'quotedPostTitle', 160)
+        && isOptionalString(data, 'restackedNoteId', 128)
+        && isOptionalString(data, 'restackedAuthorName', 80)
+        && isOptionalString(data, 'restackedBody', 600)
         && data.likesCount is int && data.likesCount >= 0
+        && (!('editedAt' in data) || data.editedAt == null || data.editedAt is timestamp)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidNoteReply(data, replyId, noteId) {
+      return data.keys().hasAll(['id', 'noteId', 'authorId', 'authorName', 'authorHandle', 'authorAvatar', 'body', 'createdAt'])
+        && data.keys().hasOnly(['id', 'noteId', 'authorId', 'authorName', 'authorHandle', 'authorAvatar', 'body', 'createdAt'])
+        && isValidId(data.id)
+        && data.id == replyId
+        && isValidId(data.noteId)
+        && data.noteId == noteId
+        && isValidId(data.authorId)
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80
+        && data.authorHandle is string && data.authorHandle.size() >= 2 && data.authorHandle.size() <= 40
+        && data.authorAvatar is string && data.authorAvatar.size() <= 500
+        && data.body is string && data.body.size() >= 1 && data.body.size() <= 600
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAuthorFollow(data, followId) {
+      return data.keys().hasAll(['id', 'authorId', 'authorName', 'followerId', 'followerName', 'createdAt'])
+        && data.keys().hasOnly(['id', 'authorId', 'authorName', 'followerId', 'followerName', 'createdAt'])
+        && isValidId(data.id)
+        && data.id == followId
+        && isValidId(data.authorId)
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80
+        && isValidId(data.followerId)
+        && data.followerName is string && data.followerName.size() >= 1 && data.followerName.size() <= 80
         && data.createdAt is timestamp;
     }
 
@@ -278,7 +312,7 @@ service cloud.firestore {
         && isValidId(data.recipientId)
         && isValidId(data.actorId)
         && data.actorName is string && data.actorName.size() >= 1 && data.actorName.size() <= 80
-        && data.type in ['comment_reply', 'post_comment', 'note_like', 'new_subscriber', 'welcome']
+        && data.type in ['comment_reply', 'post_comment', 'note_like', 'note_reply', 'chat_reply', 'new_subscriber', 'new_follower', 'new_issue', 'welcome']
         && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
         && data.body is string && data.body.size() <= 320
         && isOptionalString(data, 'postId', 128)
@@ -299,6 +333,33 @@ service cloud.firestore {
         && data.recipientCount is int && data.recipientCount >= 0
         && data.messageId is string && data.messageId.size() >= 1 && data.messageId.size() <= 80
         && data.sentAt is timestamp;
+    }
+
+    function isValidChatMessage(data, msgId, pubId) {
+      return data.keys().hasAll([
+          'id', 'publicationId', 'authorId', 'authorName', 'authorAvatar',
+          'authorRole', 'threadTier', 'body', 'isPinned', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'publicationId', 'authorId', 'authorName', 'authorAvatar',
+          'authorRole', 'threadTier', 'body', 'parentMessageId', 'isPinned',
+          'editedAt', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.id == msgId
+        && isValidId(data.publicationId)
+        && data.publicationId == pubId
+        && isValidId(data.authorId)
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80
+        && data.authorAvatar is string && data.authorAvatar.size() <= 500
+        && data.authorRole in ['owner', 'supporting', 'subscriber']
+        && data.threadTier in ['subscribers', 'supporting']
+        && data.body is string && data.body.size() >= 1 && data.body.size() <= 1000
+        && (!('parentMessageId' in data) || data.parentMessageId == null || isValidId(data.parentMessageId))
+        && data.isPinned is bool
+        && (!('editedAt' in data) || data.editedAt == null || data.editedAt is timestamp)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
     }
 
     // --- Collection Rules ---
@@ -360,7 +421,7 @@ service cloud.firestore {
             && incoming().diff(existing()).affectedKeys().hasOnly([
               'ownerName', 'slug', 'name', 'tagline', 'description',
               'category', 'accentColor', 'coverImageUrl',
-              'pinnedPostId', 'welcomeNote', 'updatedAt'
+              'pinnedPostId', 'welcomeNote', 'recommendedPubIds', 'updatedAt'
             ])
             && incoming().updatedAt == request.time
           ) ||
@@ -381,6 +442,65 @@ service cloud.firestore {
           )
         );
       allow delete: if isVerifiedUser() && isValidId(pubId) && existing().ownerId == request.auth.uid;
+
+      match /chatMessages/{msgId} {
+        allow get: if isValidId(pubId) && isValidId(msgId);
+        allow list: if resource.data.publicationId == pubId;
+        allow create: if isVerifiedUser()
+          && isValidId(pubId)
+          && isValidId(msgId)
+          && isValidChatMessage(incoming(), msgId, pubId)
+          && incoming().authorId == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/publications/$(pubId))
+          && (
+            (
+              get(/databases/$(database)/documents/publications/$(pubId)).data.ownerId == request.auth.uid
+              && incoming().authorRole == 'owner'
+            ) || (
+              exists(/databases/$(database)/documents/subscriptions/$(pubId + '_' + request.auth.uid))
+              && incoming().isPinned == false
+              && (
+                incoming().threadTier == 'subscribers'
+                || get(/databases/$(database)/documents/subscriptions/$(pubId + '_' + request.auth.uid)).data.tier == 'supporting'
+              )
+              && incoming().authorRole == (
+                get(/databases/$(database)/documents/subscriptions/$(pubId + '_' + request.auth.uid)).data.tier == 'supporting'
+                  ? 'supporting'
+                  : 'subscriber'
+              )
+            )
+          );
+        allow update: if isVerifiedUser()
+          && isValidId(pubId)
+          && isValidId(msgId)
+          && isValidChatMessage(incoming(), msgId, pubId)
+          && incoming().authorId == existing().authorId
+          && incoming().publicationId == existing().publicationId
+          && incoming().authorRole == existing().authorRole
+          && incoming().threadTier == existing().threadTier
+          && incoming().createdAt == existing().createdAt
+          && (
+            (
+              existing().authorId == request.auth.uid
+              && incoming().diff(existing()).affectedKeys().hasOnly(['body', 'editedAt', 'updatedAt'])
+              && incoming().editedAt == request.time
+              && incoming().updatedAt == request.time
+            ) || (
+              get(/databases/$(database)/documents/publications/$(pubId)).data.ownerId == request.auth.uid
+              && incoming().diff(existing()).affectedKeys().hasOnly(['isPinned', 'updatedAt'])
+              && incoming().updatedAt == request.time
+            )
+          );
+        allow delete: if isVerifiedUser()
+          && isValidId(pubId)
+          && isValidId(msgId)
+          && (
+            existing().authorId == request.auth.uid
+            || get(/databases/$(database)/documents/publications/$(pubId)).data.ownerId == request.auth.uid
+          );
+      }
     }
 
     match /posts/{postId} {
@@ -489,6 +609,10 @@ service cloud.firestore {
       }
     }
 
+    match /{path=**}/comments/{commentId} {
+      allow list: if resource.data.postStatus == 'published';
+    }
+
     match /subscriptions/{subId} {
       allow get: if isSignedIn() && isValidId(subId) && (
         existing().userId == request.auth.uid || existing().publicationOwnerId == request.auth.uid
@@ -559,9 +683,37 @@ service cloud.firestore {
             && incoming().likesCount >= 0
             && exists(/databases/$(database)/documents/noteLikes/$(noteId + '_' + request.auth.uid))
             && !existsAfter(/databases/$(database)/documents/noteLikes/$(noteId + '_' + request.auth.uid))
+          ) ||
+          (
+            existing().authorId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['body', 'editedAt'])
+            && incoming().editedAt == request.time
           )
         );
       allow delete: if isVerifiedUser() && isValidId(noteId) && existing().authorId == request.auth.uid;
+
+      match /replies/{replyId} {
+        allow get: if isValidId(noteId) && isValidId(replyId);
+        allow list: if true;
+        allow create: if isVerifiedUser()
+          && isValidId(noteId)
+          && isValidId(replyId)
+          && isValidNoteReply(incoming(), replyId, noteId)
+          && incoming().authorId == request.auth.uid
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/notes/$(noteId));
+        allow delete: if isVerifiedUser()
+          && isValidId(noteId)
+          && isValidId(replyId)
+          && (
+            existing().authorId == request.auth.uid ||
+            get(/databases/$(database)/documents/notes/$(noteId)).data.authorId == request.auth.uid
+          );
+      }
+    }
+
+    match /{path=**}/replies/{replyId} {
+      allow list: if true;
     }
 
     match /noteLikes/{likeId} {
@@ -663,6 +815,19 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/publications/$(incoming().publicationId))
         && get(/databases/$(database)/documents/publications/$(incoming().publicationId)).data.ownerId == request.auth.uid;
       allow delete: if isVerifiedUser() && isValidId(dispatchId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /authorFollows/{followId} {
+      allow get: if isValidId(followId);
+      allow list: if true;
+      allow create: if isVerifiedUser()
+        && isValidId(followId)
+        && isValidAuthorFollow(incoming(), followId)
+        && followId == incoming().authorId + '_' + request.auth.uid
+        && incoming().followerId == request.auth.uid
+        && incoming().authorId != request.auth.uid
+        && incoming().createdAt == request.time;
+      allow delete: if isVerifiedUser() && isValidId(followId) && existing().followerId == request.auth.uid;
     }
   }
 }

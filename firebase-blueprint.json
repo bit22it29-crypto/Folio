@@ -130,6 +130,10 @@
           "type": "string",
           "maxLength": 500
         },
+        "recommendedPubIds": {
+          "type": "array",
+          "description": "Up to 4 recommended Folio publication IDs."
+        },
         "subscriberCount": {
           "type": "integer"
         },
@@ -557,8 +561,24 @@
           "type": "string",
           "maxLength": 160
         },
+        "restackedNoteId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "restackedAuthorName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "restackedBody": {
+          "type": "string",
+          "maxLength": 600
+        },
         "likesCount": {
           "type": "integer"
+        },
+        "editedAt": {
+          "type": "string",
+          "format": "date-time"
         },
         "createdAt": {
           "type": "string",
@@ -769,7 +789,7 @@
         },
         "type": {
           "type": "string",
-          "enum": ["comment_reply", "post_comment", "note_like", "new_subscriber", "welcome"]
+          "enum": ["comment_reply", "post_comment", "note_like", "note_reply", "chat_reply", "new_subscriber", "new_follower", "new_issue", "welcome"]
         },
         "title": {
           "type": "string",
@@ -844,6 +864,174 @@
         }
       },
       "required": ["id", "publicationId", "ownerId", "title", "recipientCount", "messageId", "sentAt"]
+    },
+    "AuthorFollow": {
+      "title": "AuthorFollow",
+      "description": "Reader-to-writer follow relationship.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "followerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "followerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "authorId", "authorName", "followerId", "followerName", "createdAt"]
+    },
+    "NoteReply": {
+      "title": "NoteReply",
+      "description": "Threaded reply on a Salon short-form note.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "noteId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "authorHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "noteId", "authorId", "authorName", "authorHandle", "authorAvatar", "body", "createdAt"]
+    },
+    "PublicationChatMessage": {
+      "title": "PublicationChatMessage",
+      "description": "Subscriber chat lounge thread or reply within a publication.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publicationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "authorRole": {
+          "type": "string",
+          "enum": ["owner", "supporting", "subscriber"]
+        },
+        "threadTier": {
+          "type": "string",
+          "enum": ["subscribers", "supporting"]
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "parentMessageId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "isPinned": {
+          "type": "boolean"
+        },
+        "editedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "publicationId",
+        "authorId",
+        "authorName",
+        "authorAvatar",
+        "authorRole",
+        "threadTier",
+        "body",
+        "isPinned",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -906,6 +1094,18 @@
     "/dispatches/{dispatchId}": {
       "schema": { "$ref": "#/entities/NewsletterDispatch" },
       "description": "Newsletter dispatch logs owned by the publication author."
+    },
+    "/authorFollows/{followId}": {
+      "schema": { "$ref": "#/entities/AuthorFollow" },
+      "description": "Writer follow edges linking readers to authors."
+    },
+    "/notes/{noteId}/replies/{replyId}": {
+      "schema": { "$ref": "#/entities/NoteReply" },
+      "description": "Threaded replies on short-form Salon notes."
+    },
+    "/publications/{pubId}/chatMessages/{msgId}": {
+      "schema": { "$ref": "#/entities/PublicationChatMessage" },
+      "description": "Subscriber chat threads and replies scoped to a publication."
     }
   }
 }

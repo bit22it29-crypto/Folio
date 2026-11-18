@@ -1,6 +1,7 @@
 import { type User } from 'firebase/auth';
 import {
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -21,18 +22,23 @@ import { SHOWCASE_NOTES, SHOWCASE_POSTS, SHOWCASE_PUBLICATIONS } from '../data/s
 import type {
   AccessTier,
   AppNotification,
+  AuthorFollow,
   Bookmark,
   Category,
+  ChatAuthorRole,
+  ChatThreadTier,
   Comment,
   Highlight,
   HighlightColor,
   NewsletterDispatch,
   Note,
+  NoteReply,
   NotificationType,
   Post,
   PostRevision,
   PostStatus,
   Publication,
+  PublicationChatMessage,
   ReadingProgress,
   Subscription,
   SubscriptionTier,
@@ -208,6 +214,11 @@ export function subscribePublications(
           coverImageUrl: String(data.coverImageUrl || ''),
           pinnedPostId: data.pinnedPostId ? String(data.pinnedPostId) : null,
           welcomeNote: data.welcomeNote ? String(data.welcomeNote) : '',
+          recommendedPubIds: Array.isArray(data.recommendedPubIds)
+            ? data.recommendedPubIds
+                .filter((id): id is string => typeof id === 'string' && PATTERNS_ID_TEST(id))
+                .slice(0, 4)
+            : [],
           subscriberCount: typeof data.subscriberCount === 'number' ? data.subscriberCount : 0,
           createdAt: toDate(data.createdAt),
           updatedAt: toDate(data.updatedAt),
@@ -488,7 +499,13 @@ export function subscribeNotes(
           body: String(data.body || ''),
           quotedPostId: data.quotedPostId ? String(data.quotedPostId) : undefined,
           quotedPostTitle: data.quotedPostTitle ? String(data.quotedPostTitle) : undefined,
+          restackedNoteId: data.restackedNoteId ? String(data.restackedNoteId) : undefined,
+          restackedAuthorName: data.restackedAuthorName
+            ? String(data.restackedAuthorName)
+            : undefined,
+          restackedBody: data.restackedBody ? String(data.restackedBody) : undefined,
           likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
+          editedAt: toDate(data.editedAt),
           createdAt: toDate(data.createdAt),
         };
       });
@@ -825,6 +842,7 @@ export async function updatePublication(
     coverImageUrl: string;
     pinnedPostId?: string | null;
     welcomeNote?: string;
+    recommendedPubIds?: string[];
   }
 ): Promise<void> {
   const name = clampString(input.name, LIMITS.pubNameMax);
@@ -844,6 +862,15 @@ export async function updatePublication(
   }
   if (input.welcomeNote !== undefined) {
     updates.welcomeNote = clampString(input.welcomeNote, LIMITS.welcomeNoteMax);
+  }
+  if (input.recommendedPubIds !== undefined) {
+    updates.recommendedPubIds = Array.from(
+      new Set(
+        input.recommendedPubIds.filter(
+          (id) => typeof id === 'string' && id !== pubId && PATTERNS_ID_TEST(id)
+        )
+      )
+    ).slice(0, 4);
   }
   try {
     await updateDoc(doc(db, 'publications', pubId), updates);
@@ -1189,6 +1216,7 @@ export async function createNote(input: {
   publication?: Publication;
   body: string;
   quotedPost?: Post;
+  restackedNote?: Note;
 }): Promise<void> {
   const noteId = makeSafeId('note');
   const payload: Record<string, unknown> = {
@@ -1213,10 +1241,32 @@ export async function createNote(input: {
     payload.quotedPostTitle = clampString(input.quotedPost.title, LIMITS.postTitleMax);
   }
 
+  if (input.restackedNote && !input.restackedNote.isShowcase) {
+    payload.restackedNoteId = input.restackedNote.id;
+    payload.restackedAuthorName = clampString(
+      input.restackedNote.authorName,
+      LIMITS.displayNameMax
+    );
+    payload.restackedBody = clampString(input.restackedNote.body, LIMITS.noteBodyMax);
+  }
+
   try {
     await setDoc(doc(db, 'notes', noteId), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, `notes/${noteId}`);
+  }
+}
+
+export async function updateNote(noteId: string, body: string): Promise<void> {
+  const cleanBody = clampString(body.trim(), LIMITS.noteBodyMax);
+  if (!cleanBody) return;
+  try {
+    await updateDoc(doc(db, 'notes', noteId), {
+      body: cleanBody,
+      editedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `notes/${noteId}`);
   }
 }
 
@@ -1510,3 +1560,423 @@ export async function recordNewsletterDispatch(input: {
     handleFirestoreError(error, OperationType.CREATE, `dispatches/${id}`);
   }
 }
+
+function PATTERNS_ID_TEST(id: string): boolean {
+  return id.length >= 1 && id.length <= 128 && /^[a-zA-Z0-9_\-]+$/.test(id);
+}
+
+// --- Live Published Comment Counts across all posts ---
+export function subscribePublishedCommentCounts(
+  onData: (counts: Map<string, number>) => void
+): Unsubscribe {
+  const q = query(collectionGroup(db, 'comments'), where('postStatus', '==', 'published'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const counts = new Map<string, number>();
+      snapshot.docs.forEach((d) => {
+        const postId = String(d.data().postId || '');
+        if (!postId) return;
+        counts.set(postId, (counts.get(postId) || 0) + 1);
+      });
+      onData(counts);
+    },
+    () => {
+      // Non-blocking aggregate count listener
+    }
+  );
+}
+
+// --- Note Replies (Salon Discussion Threads) ---
+export function subscribeNoteReplies(
+  noteId: string,
+  onData: (replies: NoteReply[]) => void
+): Unsubscribe {
+  const path = `notes/${noteId}/replies`;
+  const q = query(collection(db, 'notes', noteId, 'replies'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: NoteReply[] = snapshot.docs
+        .map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            noteId: String(data.noteId || noteId),
+            authorId: String(data.authorId || ''),
+            authorName: String(data.authorName || ''),
+            authorHandle: String(data.authorHandle || ''),
+            authorAvatar: String(data.authorAvatar || ''),
+            body: String(data.body || ''),
+            createdAt: toDate(data.createdAt),
+          };
+        })
+        .sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+      onData(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+    }
+  );
+}
+
+export function subscribeAllNoteReplyCounts(
+  onData: (counts: Map<string, number>) => void
+): Unsubscribe {
+  const q = query(collectionGroup(db, 'replies'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const counts = new Map<string, number>();
+      snapshot.docs.forEach((d) => {
+        const noteId = String(d.data().noteId || '');
+        if (!noteId) return;
+        counts.set(noteId, (counts.get(noteId) || 0) + 1);
+      });
+      onData(counts);
+    },
+    () => {
+      // Non-blocking aggregate listener
+    }
+  );
+}
+
+export async function addNoteReply(input: {
+  note: Note;
+  user: User;
+  profile: UserProfile;
+  body: string;
+}): Promise<void> {
+  const cleanBody = clampString(input.body.trim(), LIMITS.noteBodyMax);
+  if (!cleanBody || input.note.isShowcase) return;
+  const replyId = makeSafeId('nrep');
+  const payload = {
+    id: replyId,
+    noteId: input.note.id,
+    authorId: input.user.uid,
+    authorName: clampString(input.profile.displayName || 'Reader', LIMITS.displayNameMax) || 'Reader',
+    authorHandle: clampString(input.profile.handle || 'reader', LIMITS.handleMax) || 'reader',
+    authorAvatar: clampString(input.profile.avatarUrl || '', LIMITS.urlMax),
+    body: cleanBody,
+    createdAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(doc(db, 'notes', input.note.id, 'replies', replyId), payload);
+    if (input.note.authorId && input.note.authorId !== input.user.uid) {
+      await createNotification({
+        recipientId: input.note.authorId,
+        actorId: input.user.uid,
+        actorName: input.profile.displayName,
+        type: 'note_reply',
+        title: `${input.profile.displayName} replied to your Salon note`,
+        body: cleanBody,
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, `notes/${input.note.id}/replies/${replyId}`);
+  }
+}
+
+export async function deleteNoteReply(noteId: string, replyId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'notes', noteId, 'replies', replyId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `notes/${noteId}/replies/${replyId}`);
+  }
+}
+
+// --- Author Follow Social Graph ---
+export function subscribeUserFollowing(
+  followerId: string,
+  onData: (follows: AuthorFollow[]) => void
+): Unsubscribe {
+  const path = 'authorFollows';
+  const q = query(collection(db, path), where('followerId', '==', followerId));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: AuthorFollow[] = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          authorId: String(data.authorId || ''),
+          authorName: String(data.authorName || ''),
+          followerId: String(data.followerId || followerId),
+          followerName: String(data.followerName || ''),
+          createdAt: toDate(data.createdAt),
+        };
+      });
+      onData(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+    }
+  );
+}
+
+export function subscribeAuthorFollowerCounts(
+  onData: (counts: Map<string, number>) => void
+): Unsubscribe {
+  const path = 'authorFollows';
+  return onSnapshot(
+    collection(db, path),
+    (snapshot) => {
+      const counts = new Map<string, number>();
+      snapshot.docs.forEach((d) => {
+        const authorId = String(d.data().authorId || '');
+        if (!authorId) return;
+        counts.set(authorId, (counts.get(authorId) || 0) + 1);
+      });
+      onData(counts);
+    },
+    () => {
+      // Non-blocking aggregate listener
+    }
+  );
+}
+
+export async function toggleAuthorFollow(input: {
+  authorId: string;
+  authorName: string;
+  user: User;
+  profile: UserProfile;
+  isCurrentlyFollowing: boolean;
+}): Promise<void> {
+  if (!input.authorId || input.authorId === input.user.uid) return;
+  const followId = `${input.authorId}_${input.user.uid}`;
+  const path = `authorFollows/${followId}`;
+  try {
+    if (input.isCurrentlyFollowing) {
+      await deleteDoc(doc(db, 'authorFollows', followId));
+    } else {
+      await setDoc(doc(db, 'authorFollows', followId), {
+        id: followId,
+        authorId: input.authorId,
+        authorName: clampString(input.authorName || 'Writer', LIMITS.displayNameMax) || 'Writer',
+        followerId: input.user.uid,
+        followerName:
+          clampString(input.profile.displayName || 'Reader', LIMITS.displayNameMax) || 'Reader',
+        createdAt: serverTimestamp(),
+      });
+      await createNotification({
+        recipientId: input.authorId,
+        actorId: input.user.uid,
+        actorName: input.profile.displayName,
+        type: 'new_follower',
+        title: `${input.profile.displayName} started following you`,
+        body: `You have a new reader following your essays and Salon notes.`,
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function notifySubscribersOfIssue(input: {
+  subscribers: Subscription[];
+  actorId: string;
+  actorName: string;
+  publicationName: string;
+  publicationSlug: string;
+  postId: string;
+  postTitle: string;
+}): Promise<void> {
+  const targets = input.subscribers.filter((s) => s.userId && s.userId !== input.actorId).slice(0, 25);
+  for (const sub of targets) {
+    await createNotification({
+      recipientId: sub.userId,
+      actorId: input.actorId,
+      actorName: input.actorName,
+      type: 'new_issue',
+      title: `${input.publicationName}: ${input.postTitle}`,
+      body: `New issue published by ${input.actorName}.`,
+      postId: input.postId,
+      publicationSlug: input.publicationSlug,
+    });
+  }
+}
+
+// --- Publication Subscriber Chat ---
+export function subscribePublicationChat(
+  publicationId: string,
+  onData: (messages: PublicationChatMessage[]) => void
+): Unsubscribe {
+  const path = `publications/${publicationId}/chatMessages`;
+  const q = query(
+    collection(db, 'publications', publicationId, 'chatMessages'),
+    where('publicationId', '==', publicationId)
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: PublicationChatMessage[] = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          publicationId: String(data.publicationId || publicationId),
+          authorId: String(data.authorId || ''),
+          authorName: String(data.authorName || 'Subscriber'),
+          authorAvatar: String(data.authorAvatar || ''),
+          authorRole:
+            data.authorRole === 'owner' || data.authorRole === 'supporting'
+              ? (data.authorRole as ChatAuthorRole)
+              : 'subscriber',
+          threadTier: data.threadTier === 'supporting' ? 'supporting' : 'subscribers',
+          body: String(data.body || ''),
+          parentMessageId: data.parentMessageId ? String(data.parentMessageId) : null,
+          isPinned: Boolean(data.isPinned),
+          editedAt: toDate(data.editedAt),
+          createdAt: toDate(data.createdAt),
+          updatedAt: toDate(data.updatedAt),
+        };
+      });
+      list.sort((a, b) => {
+        const at = a.createdAt ? a.createdAt.getTime() : 0;
+        const bt = b.createdAt ? b.createdAt.getTime() : 0;
+        return at - bt;
+      });
+      onData(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+    }
+  );
+}
+
+export async function createPublicationChatMessage(input: {
+  publication: Publication;
+  subscription?: Subscription;
+  user: User;
+  profile: UserProfile;
+  body: string;
+  threadTier?: ChatThreadTier;
+  parentMessageId?: string | null;
+  parentAuthorId?: string | null;
+  isPinned?: boolean;
+}): Promise<void> {
+  const cleanBody = clampString(input.body.trim(), LIMITS.chatBodyMax);
+  if (!cleanBody) return;
+
+  const isOwner = input.publication.ownerId === input.user.uid;
+  const isSupporting = input.subscription?.tier === 'supporting';
+  if (!isOwner && !input.subscription) {
+    throw new Error('Subscribe to join this publication chat.');
+  }
+
+  const authorRole: ChatAuthorRole = isOwner
+    ? 'owner'
+    : isSupporting
+      ? 'supporting'
+      : 'subscriber';
+
+  const resolvedTier: ChatThreadTier =
+    input.threadTier === 'supporting' && (isOwner || isSupporting)
+      ? 'supporting'
+      : 'subscribers';
+
+  const msgId = makeSafeId('chat');
+  const payload: Record<string, unknown> = {
+    id: msgId,
+    publicationId: input.publication.id,
+    authorId: input.user.uid,
+    authorName:
+      clampString(input.profile.displayName || 'Subscriber', LIMITS.displayNameMax) ||
+      'Subscriber',
+    authorAvatar: clampString(input.profile.avatarUrl || '', LIMITS.urlMax),
+    authorRole,
+    threadTier: resolvedTier,
+    body: cleanBody,
+    isPinned: Boolean(isOwner && input.isPinned && !input.parentMessageId),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  if (input.parentMessageId) {
+    payload.parentMessageId = input.parentMessageId;
+  }
+
+  const path = `publications/${input.publication.id}/chatMessages/${msgId}`;
+  try {
+    await setDoc(
+      doc(db, 'publications', input.publication.id, 'chatMessages', msgId),
+      payload
+    );
+
+    if (
+      input.parentMessageId &&
+      input.parentAuthorId &&
+      input.parentAuthorId !== input.user.uid
+    ) {
+      await createNotification({
+        recipientId: input.parentAuthorId,
+        actorId: input.user.uid,
+        actorName: input.profile.displayName,
+        type: 'chat_reply',
+        title: `${input.profile.displayName} replied in ${input.publication.name} chat`,
+        body: cleanBody,
+        publicationSlug: input.publication.slug,
+      });
+    } else if (!isOwner && input.publication.ownerId !== input.user.uid) {
+      await createNotification({
+        recipientId: input.publication.ownerId,
+        actorId: input.user.uid,
+        actorName: input.profile.displayName,
+        type: 'chat_reply',
+        title: `New message in ${input.publication.name} Subscriber Chat`,
+        body: cleanBody,
+        publicationSlug: input.publication.slug,
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function updatePublicationChatMessage(
+  publicationId: string,
+  msgId: string,
+  body: string
+): Promise<void> {
+  const cleanBody = clampString(body.trim(), LIMITS.chatBodyMax);
+  if (!cleanBody) return;
+  const path = `publications/${publicationId}/chatMessages/${msgId}`;
+  try {
+    await updateDoc(doc(db, 'publications', publicationId, 'chatMessages', msgId), {
+      body: cleanBody,
+      editedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export async function togglePinPublicationChatMessage(
+  publicationId: string,
+  msgId: string,
+  isPinned: boolean
+): Promise<void> {
+  const path = `publications/${publicationId}/chatMessages/${msgId}`;
+  try {
+    await updateDoc(doc(db, 'publications', publicationId, 'chatMessages', msgId), {
+      isPinned,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export async function deletePublicationChatMessage(
+  publicationId: string,
+  msgId: string
+): Promise<void> {
+  const path = `publications/${publicationId}/chatMessages/${msgId}`;
+  try {
+    await deleteDoc(doc(db, 'publications', publicationId, 'chatMessages', msgId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+

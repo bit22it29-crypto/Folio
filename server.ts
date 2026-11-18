@@ -4,7 +4,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { marked } from 'marked';
 import { createServer as createViteServer } from 'vite';
 
@@ -287,6 +287,7 @@ async function startServer() {
 
   const TTS_VOICES = ['Kore', 'Charon', 'Puck', 'Fenrir', 'Zephyr'] as const;
   const ttsCache = new Map<string, string>();
+  const summaryCache = new Map<string, string>();
 
   const getGeminiClient = (): GoogleGenAI | null => {
     const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -299,6 +300,34 @@ async function startServer() {
         },
       },
     });
+  };
+
+  const parseGeminiError = (
+    err: unknown,
+    fallback: string
+  ): { status: number; message: string } => {
+    const rawMsg = err instanceof Error ? err.message : fallback;
+    let cleanMsg = rawMsg;
+    try {
+      const parsed = JSON.parse(rawMsg) as { error?: { message?: string } };
+      if (parsed?.error?.message) {
+        cleanMsg = parsed.error.message;
+      }
+    } catch {
+      // Plain error string
+    }
+    const status =
+      rawMsg.includes('429') || rawMsg.includes('RESOURCE_EXHAUSTED')
+        ? 429
+        : rawMsg.includes('403') || rawMsg.includes('PERMISSION_DENIED')
+        ? 403
+        : rawMsg.includes('400') || rawMsg.includes('API_KEY_INVALID')
+        ? 400
+        : 500;
+    if (status === 403 || status === 400) {
+      cleanMsg = `${cleanMsg} Please check your Gemini API key in Settings > Secrets.`;
+    }
+    return { status, message: cleanMsg };
   };
 
   app.use(express.json({ limit: '4mb' }));
@@ -414,14 +443,113 @@ async function startServer() {
         cached: false,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Voice generation failed.';
-      const status = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')
-        ? 429
-        : msg.includes('403') || msg.includes('PERMISSION_DENIED')
-        ? 403
-        : 500;
-      console.error('TTS generation error:', err);
-      res.status(status).json({ error: msg });
+      const { status, message } = parseGeminiError(err, 'Voice generation failed.');
+      if (status >= 500) {
+        console.error('TTS generation error:', message);
+      } else {
+        console.warn(`TTS generation (${status}):`, message);
+      }
+      res.status(status).json({ error: message });
+    }
+  });
+
+  app.post('/api/essays/summary', async (req, res) => {
+    try {
+      const ai = getGeminiClient();
+      if (!ai) {
+        res.status(503).json({
+          error:
+            'Essay summaries require a Gemini API key configured in Settings > Secrets.',
+          code: 'MISSING_API_KEY',
+        });
+        return;
+      }
+
+      const { postId, title, subtitle, authorName, contentMarkdown, forceRefresh } = (req.body ||
+        {}) as {
+        postId?: string;
+        title?: string;
+        subtitle?: string;
+        authorName?: string;
+        contentMarkdown?: string;
+        forceRefresh?: boolean;
+      };
+
+      const cleanTitle = typeof title === 'string' ? title.trim().slice(0, 200) : 'Untitled Essay';
+      const cleanSubtitle = typeof subtitle === 'string' ? subtitle.trim().slice(0, 300) : '';
+      const cleanAuthor =
+        typeof authorName === 'string' ? authorName.trim().slice(0, 100) : 'Writer';
+      const cleanBody =
+        typeof contentMarkdown === 'string' ? contentMarkdown.trim().slice(0, 24000) : '';
+
+      if (cleanBody.length < 40) {
+        res.status(400).json({ error: 'Essay content is too short to summarize.' });
+        return;
+      }
+
+      const cacheKey = crypto
+        .createHash('sha1')
+        .update(`${postId || ''}|${cleanTitle}|${cleanBody}`)
+        .digest('hex');
+
+      if (!forceRefresh) {
+        const cached = summaryCache.get(cacheKey);
+        if (cached) {
+          res.json({
+            summary: cached,
+            model: 'gemini-4-hydrogen',
+            cached: true,
+          });
+          return;
+        }
+      }
+
+      const promptParts = [
+        `Title: ${cleanTitle}`,
+        cleanSubtitle ? `Subtitle: ${cleanSubtitle}` : '',
+        `Author: ${cleanAuthor}`,
+        '',
+        'Essay Content:',
+        cleanBody,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: promptParts,
+        config: {
+          systemInstruction:
+            'You are an editorial literary editor. Write exactly one cohesive, insightful paragraph (3 to 4 sentences, roughly 55 to 85 words) summarizing the central thesis and key arguments of the provided essay. Output plain prose only: no bullet points, no markdown formatting, no introductory label, and no surrounding quotation marks.',
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        },
+      });
+
+      const summary = (response.text ?? '').replace(/\s+/g, ' ').trim();
+      if (!summary) {
+        res.status(502).json({ error: 'Summary model returned an empty response.' });
+        return;
+      }
+
+      if (summaryCache.size >= 120) {
+        const oldestKey = summaryCache.keys().next().value;
+        if (oldestKey) summaryCache.delete(oldestKey);
+      }
+      summaryCache.set(cacheKey, summary);
+
+      res.json({
+        summary,
+        model: 'gemini-4-hydrogen',
+        cached: false,
+      });
+    } catch (err) {
+      const { status, message } = parseGeminiError(err, 'Failed to generate essay summary.');
+      if (status >= 500) {
+        console.error('Essay summary error:', message);
+      } else {
+        console.warn(`Essay summary (${status}):`, message);
+      }
+      res.status(status).json({ error: message });
     }
   });
 

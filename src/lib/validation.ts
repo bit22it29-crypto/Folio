@@ -19,6 +19,7 @@ export const LIMITS = {
   tagMax: 28,
   tagsCountMax: 5,
   commentBodyMax: 2000,
+  chatBodyMax: 1000,
   noteBodyMax: 600,
   highlightQuoteMax: 600,
   highlightNoteMax: 600,
@@ -98,8 +99,12 @@ export function normalizeAccentColor(color: string): string {
   return PATTERNS.hexColor.test(color) ? color : '#7C3AED';
 }
 
+export function countWords(markdown: string): number {
+  return markdown.trim().split(/\s+/).filter(Boolean).length;
+}
+
 export function estimateReadTimeMinutes(markdown: string): number {
-  const words = markdown.trim().split(/\s+/).filter(Boolean).length;
+  const words = countWords(markdown);
   return Math.max(1, Math.min(180, Math.ceil(words / 220)));
 }
 

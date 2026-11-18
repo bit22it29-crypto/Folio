@@ -24,8 +24,15 @@ export type NotificationType =
   | 'comment_reply'
   | 'post_comment'
   | 'note_like'
+  | 'note_reply'
+  | 'chat_reply'
   | 'new_subscriber'
+  | 'new_follower'
+  | 'new_issue'
   | 'welcome';
+
+export type ChatAuthorRole = 'owner' | 'supporting' | 'subscriber';
+export type ChatThreadTier = 'subscribers' | 'supporting';
 
 export interface UserProfile {
   uid: string;
@@ -57,6 +64,7 @@ export interface Publication {
   coverImageUrl: string;
   pinnedPostId?: string | null;
   welcomeNote?: string;
+  recommendedPubIds?: string[];
   subscriberCount: number;
   createdAt: Date | null;
   updatedAt: Date | null;
@@ -128,6 +136,22 @@ export interface Subscription {
   updatedAt: Date | null;
 }
 
+export interface PublicationChatMessage {
+  id: string;
+  publicationId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  authorRole: ChatAuthorRole;
+  threadTier: ChatThreadTier;
+  body: string;
+  parentMessageId?: string | null;
+  isPinned: boolean;
+  editedAt?: Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
 export interface Note {
   id: string;
   authorId: string;
@@ -140,9 +164,33 @@ export interface Note {
   body: string;
   quotedPostId?: string;
   quotedPostTitle?: string;
+  restackedNoteId?: string;
+  restackedAuthorName?: string;
+  restackedBody?: string;
   likesCount: number;
+  editedAt?: Date | null;
   createdAt: Date | null;
   isShowcase?: boolean;
+}
+
+export interface NoteReply {
+  id: string;
+  noteId: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatar: string;
+  body: string;
+  createdAt: Date | null;
+}
+
+export interface AuthorFollow {
+  id: string;
+  authorId: string;
+  authorName: string;
+  followerId: string;
+  followerName: string;
+  createdAt: Date | null;
 }
 
 export interface Bookmark {

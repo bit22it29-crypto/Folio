@@ -18,6 +18,8 @@ import {
   Share2,
   Trash2,
   Type,
+  UserCheck,
+  UserPlus,
   X,
 } from 'lucide-react';
 import {
@@ -34,6 +36,7 @@ import {
   formatRelativeTime,
   renderMarkdownToSafeHtml,
 } from '../lib/markdown';
+import { countWords } from '../lib/validation';
 import type {
   AppRoute,
   Comment,
@@ -46,6 +49,7 @@ import type {
   UserProfile,
 } from '../types/folio';
 import { EditorialImage } from './EditorialImage';
+import { EssaySummaryCard } from './EssaySummaryCard';
 import { VoiceReaderBar } from './VoiceReaderBar';
 
 interface PostReaderViewProps {
@@ -55,6 +59,9 @@ interface PostReaderViewProps {
   user: User | null;
   profile: UserProfile | null;
   isSubscribed: boolean;
+  isSupporting: boolean;
+  isFollowingAuthor: boolean;
+  authorFollowerCount: number;
   isLiked: boolean;
   isBookmarked: boolean;
   savedProgress?: ReadingProgress;
@@ -63,6 +70,7 @@ interface PostReaderViewProps {
   onUpdateReaderPrefs?: (prefs: ReaderPrefs) => void;
   onNavigate: (route: AppRoute) => void;
   onToggleSubscribe: (pub: Publication) => void;
+  onToggleFollowAuthor: (authorId: string, authorName: string) => void;
   onOpenMembershipCheckout?: (pub: Publication) => void;
   onToggleLike: (post: Post) => void;
   onToggleBookmark: (post: Post) => void;
@@ -174,6 +182,9 @@ export function PostReaderView({
   user,
   profile,
   isSubscribed,
+  isSupporting,
+  isFollowingAuthor,
+  authorFollowerCount,
   isLiked,
   isBookmarked,
   savedProgress,
@@ -182,6 +193,7 @@ export function PostReaderView({
   onUpdateReaderPrefs,
   onNavigate,
   onToggleSubscribe,
+  onToggleFollowAuthor,
   onOpenMembershipCheckout,
   onToggleLike,
   onToggleBookmark,
@@ -966,7 +978,11 @@ export function PostReaderView({
               <span aria-hidden="true">·</span>
               <span>{formatEditorialDate(post.publishedAt || post.createdAt)}</span>
               <span aria-hidden="true">·</span>
-              <span>{post.readTimeMinutes} min read</span>
+              <span className="tabular-nums">{post.readTimeMinutes} min read</span>
+              <span aria-hidden="true">·</span>
+              <span className="tabular-nums">
+                {countWords(post.contentMarkdown).toLocaleString()} words
+              </span>
               {post.accessTier === 'subscribers' && (
                 <>
                   <span aria-hidden="true">·</span>
@@ -1021,15 +1037,40 @@ export function PostReaderView({
                   </span>
                 )}
                 <div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onNavigate({ view: 'author', authorId: post.authorId })
-                    }
-                    className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] cursor-pointer block text-left"
-                  >
-                    {post.authorName}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onNavigate({ view: 'author', authorId: post.authorId })
+                      }
+                      className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] cursor-pointer text-left"
+                    >
+                      {post.authorName}
+                    </button>
+                    {!isAuthor && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleFollowAuthor(post.authorId, post.authorName)}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-md border transition-colors whitespace-nowrap cursor-pointer ${
+                          isFollowingAuthor
+                            ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
+                            : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        {isFollowingAuthor ? (
+                          <>
+                            <UserCheck className="w-3 h-3" />
+                            <span>Following</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-3 h-3" />
+                            <span>Follow</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() =>
@@ -1115,6 +1156,15 @@ export function PostReaderView({
               </div>
             </div>
           </header>
+
+          <EssaySummaryCard
+            postId={post.id}
+            title={post.title}
+            subtitle={post.subtitle}
+            authorName={post.authorName}
+            contentMarkdown={displayedMarkdown}
+            isPaywalled={isPaywalled}
+          />
 
           {post.coverImageUrl && (
             <figure className="mb-10">
@@ -1229,8 +1279,51 @@ export function PostReaderView({
             </section>
           )}
 
+          {/* Inline Publication Subscribe Box (Substack-style) */}
+          {publication && !isPaywalled && (
+            <section className="mt-12 p-6 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-accent-soft)] mb-1">
+                  Published in {publication.name}
+                </p>
+                <p className="font-display text-xl font-semibold text-[var(--text-primary)] mb-1">
+                  Enjoyed this dispatch?
+                </p>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                  {publication.tagline} ·{' '}
+                  <span className="tabular-nums text-[var(--text-muted)]">
+                    {publication.subscriberCount.toLocaleString()} subscribers
+                  </span>
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onToggleSubscribe(publication)}
+                  className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                    isSubscribed
+                      ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[var(--accent-border)]'
+                      : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
+                  }`}
+                >
+                  {isSubscribed ? 'Subscribed' : 'Subscribe Free'}
+                </button>
+                {!isSupporting && onOpenMembershipCheckout && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenMembershipCheckout(publication)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--accent-border)] bg-[var(--bg-canvas)] text-[var(--text-accent)] rounded-lg hover:bg-[var(--bg-active-soft)] whitespace-nowrap cursor-pointer"
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>Support ($7/mo)</span>
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* End-of-Essay Action Footer */}
-          <div className="mt-12 pt-6 border-t border-[var(--border-hairline)] flex flex-wrap items-center justify-between gap-4">
+          <div className="mt-10 pt-6 border-t border-[var(--border-hairline)] flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -1304,6 +1397,80 @@ export function PostReaderView({
               </button>
             )}
           </div>
+
+          {/* Author Bio Footer Card (Medium-style) */}
+          <section className="mt-8 p-5 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => onNavigate({ view: 'author', authorId: post.authorId })}
+                className="shrink-0 cursor-pointer"
+              >
+                {post.authorAvatar ? (
+                  <img
+                    src={post.authorAvatar}
+                    alt={post.authorName}
+                    referrerPolicy="no-referrer"
+                    className="w-12 h-12 rounded-full object-cover border border-[var(--border-hairline)]"
+                  />
+                ) : (
+                  <span className="w-12 h-12 rounded-full bg-[var(--accent-solid)] text-white text-sm font-semibold flex items-center justify-center">
+                    {post.authorName.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </button>
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">
+                  Written by
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onNavigate({ view: 'author', authorId: post.authorId })}
+                  className="font-display text-lg font-semibold text-[var(--text-primary)] hover:text-[var(--text-accent)] cursor-pointer text-left truncate block"
+                >
+                  {post.authorName}
+                </button>
+                <p className="text-xs text-[var(--text-secondary)] tabular-nums">
+                  {authorFollowerCount.toLocaleString()}{' '}
+                  {authorFollowerCount === 1 ? 'follower' : 'followers'} · Editor at{' '}
+                  {post.publicationName}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              {!isAuthor && (
+                <button
+                  type="button"
+                  onClick={() => onToggleFollowAuthor(post.authorId, post.authorName)}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                    isFollowingAuthor
+                      ? 'bg-[var(--bg-active-soft)] text-[var(--text-accent)] border border-[var(--accent-border)]'
+                      : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
+                  }`}
+                >
+                  {isFollowingAuthor ? (
+                    <>
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Follow Writer</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onNavigate({ view: 'author', authorId: post.authorId })}
+                className="px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] rounded-lg hover:border-[var(--accent-border)] hover:text-[var(--text-primary)] whitespace-nowrap cursor-pointer"
+              >
+                View Profile
+              </button>
+            </div>
+          </section>
 
           {/* Related Issues from Publication */}
           {relatedPosts.length > 0 && (

@@ -38,19 +38,24 @@ import {
   markNotificationRead,
   saveReadingProgress,
   seedStarterCatalog,
+  subscribeAllNoteReplyCounts,
+  subscribeAuthorFollowerCounts,
   subscribeAuthorPosts,
   subscribeNotes,
   subscribeOwnerDispatches,
   subscribePublicationSubscribers,
   subscribePublications,
+  subscribePublishedCommentCounts,
   subscribePublishedPosts,
   subscribeUserBookmarks,
+  subscribeUserFollowing,
   subscribeUserHighlights,
   subscribeUserNoteLikes,
   subscribeUserNotifications,
   subscribeUserPostLikes,
   subscribeUserReadingProgress,
   subscribeUserSubscriptions,
+  toggleAuthorFollow,
   toggleNoteLike,
   togglePostBookmark,
   togglePostLike,
@@ -61,6 +66,7 @@ import {
 import type {
   AppNotification,
   AppRoute,
+  AuthorFollow,
   Bookmark,
   Highlight,
   HighlightColor,
@@ -131,6 +137,12 @@ function FolioAppContent() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const [likedNoteIds, setLikedNoteIds] = useState<Set<string>>(new Set());
+  const [followedAuthors, setFollowedAuthors] = useState<AuthorFollow[]>([]);
+  const [authorFollowerCounts, setAuthorFollowerCounts] = useState<Map<string, number>>(
+    new Map()
+  );
+  const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
+  const [noteReplyCounts, setNoteReplyCounts] = useState<Map<string, number>>(new Map());
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [readingProgressMap, setReadingProgressMap] = useState<Map<string, ReadingProgress>>(
     new Map()
@@ -272,6 +284,7 @@ function FolioAppContent() {
         setBookmarks([]);
         setLikedPostIds(new Set());
         setLikedNoteIds(new Set());
+        setFollowedAuthors([]);
         setHighlights([]);
         setReadingProgressMap(new Map());
         setNotifications([]);
@@ -286,10 +299,16 @@ function FolioAppContent() {
     const unsubPubs = subscribePublications(setDbPublications);
     const unsubPosts = subscribePublishedPosts(setDbPosts);
     const unsubNotes = subscribeNotes(setDbNotes);
+    const unsubFollowerCounts = subscribeAuthorFollowerCounts(setAuthorFollowerCounts);
+    const unsubCommentCounts = subscribePublishedCommentCounts(setCommentCounts);
+    const unsubNoteReplyCounts = subscribeAllNoteReplyCounts(setNoteReplyCounts);
     return () => {
       unsubPubs();
       unsubPosts();
       unsubNotes();
+      unsubFollowerCounts();
+      unsubCommentCounts();
+      unsubNoteReplyCounts();
     };
   }, []);
 
@@ -303,6 +322,7 @@ function FolioAppContent() {
     const unsubBookmarks = subscribeUserBookmarks(user.uid, setBookmarks);
     const unsubPostLikes = subscribeUserPostLikes(user.uid, setLikedPostIds);
     const unsubNoteLikes = subscribeUserNoteLikes(user.uid, setLikedNoteIds);
+    const unsubFollowing = subscribeUserFollowing(user.uid, setFollowedAuthors);
     const unsubHighlights = subscribeUserHighlights(user.uid, setHighlights);
     const unsubProgress = subscribeUserReadingProgress(user.uid, setReadingProgressMap);
     const unsubNotifs = subscribeUserNotifications(user.uid, setNotifications);
@@ -315,6 +335,7 @@ function FolioAppContent() {
       unsubBookmarks();
       unsubPostLikes();
       unsubNoteLikes();
+      unsubFollowing();
       unsubHighlights();
       unsubProgress();
       unsubNotifs();
@@ -374,6 +395,11 @@ function FolioAppContent() {
   const bookmarkedPostIds = useMemo(
     () => new Set(bookmarks.map((b) => b.postId)),
     [bookmarks]
+  );
+
+  const followedAuthorIds = useMemo(
+    () => new Set(followedAuthors.map((f) => f.authorId)),
+    [followedAuthors]
   );
 
   const activeProgressMap = user ? readingProgressMap : guestProgressMap;
@@ -571,6 +597,32 @@ function FolioAppContent() {
     });
   };
 
+  const handleToggleFollowAuthor = async (authorId: string, authorName: string) => {
+    if (!user || !profile) {
+      notify('Sign in with Google to follow writers.');
+      void handleSignIn();
+      return;
+    }
+    if (authorId.startsWith('showcase_')) {
+      await seedStarterCatalog(user, profile);
+      notify('Workspace initialized — click Follow once more to confirm.');
+      return;
+    }
+    if (authorId === user.uid) {
+      notify('You cannot follow your own writer profile.');
+      return;
+    }
+    const following = followedAuthorIds.has(authorId);
+    await toggleAuthorFollow({
+      authorId,
+      authorName,
+      user,
+      profile,
+      isCurrentlyFollowing: following,
+    });
+    notify(following ? `Unfollowed ${authorName}.` : `Following ${authorName}.`);
+  };
+
   const handleSaveProgress = useCallback(
     (postId: string, percent: number, scrollY: number) => {
       const safePct = Math.max(0, Math.min(100, Math.round(percent)));
@@ -694,17 +746,23 @@ function FolioAppContent() {
       <div className="flex-1">
         {route.view === 'explore' && (
           <ExploreFrontPage
+            user={user}
             posts={posts}
             publications={publications}
             notes={notes}
             subscriptions={subscriptions}
+            followedAuthorIds={followedAuthorIds}
+            authorFollowerCounts={authorFollowerCounts}
+            commentCounts={commentCounts}
             likedPostIds={likedPostIds}
             bookmarkedPostIds={bookmarkedPostIds}
             readingProgressMap={activeProgressMap}
             onNavigate={navigate}
             onToggleSubscribe={handleToggleSubscribe}
+            onToggleFollowAuthor={handleToggleFollowAuthor}
             onToggleLike={handleTogglePostLike}
             onToggleBookmark={handleToggleBookmark}
+            onSignIn={handleSignIn}
           />
         )}
 
@@ -714,12 +772,15 @@ function FolioAppContent() {
             posts={posts}
             userPublications={userPublications}
             subscriptions={subscriptions}
+            followedAuthorIds={followedAuthorIds}
+            noteReplyCounts={noteReplyCounts}
             user={user}
             profile={profile}
             likedNoteIds={likedNoteIds}
             onNavigate={navigate}
             onToggleNoteLike={handleToggleNoteLike}
             onSignIn={handleSignIn}
+            onNotify={notify}
           />
         )}
 
@@ -727,6 +788,7 @@ function FolioAppContent() {
           <SubscriptionsView
             user={user}
             subscriptions={subscriptions}
+            followedAuthors={followedAuthors}
             bookmarks={bookmarks}
             highlights={activeHighlights}
             readingProgressMap={activeProgressMap}
@@ -734,6 +796,7 @@ function FolioAppContent() {
             posts={posts}
             onNavigate={navigate}
             onToggleSubscribe={handleToggleSubscribe}
+            onToggleFollowAuthor={handleToggleFollowAuthor}
             onOpenMembershipCheckout={handleOpenMembershipCheckout}
             onToggleBookmark={handleToggleBookmark}
             onDeleteHighlight={handleDeleteHighlight}
@@ -747,9 +810,11 @@ function FolioAppContent() {
             user={user}
             profile={profile}
             userPublications={userPublications}
+            allPublications={publications}
             authorPosts={authorPosts}
             ownerSubscribers={ownerSubscribers}
             ownerDispatches={ownerDispatches}
+            commentCounts={commentCounts}
             hasFirestorePublications={dbPublications.length > 0}
             initialEditPostId={route.editPostId}
             onNavigate={navigate}
@@ -762,13 +827,18 @@ function FolioAppContent() {
         {route.view === 'author' && (
           <AuthorProfileView
             authorId={route.authorId}
+            currentUserId={user?.uid}
             publications={publications}
             posts={posts}
             notes={notes}
             subscriptions={subscriptions}
+            isFollowing={followedAuthorIds.has(route.authorId)}
+            followerCount={authorFollowerCounts.get(route.authorId) || 0}
+            commentCounts={commentCounts}
             likedPostIds={likedPostIds}
             bookmarkedPostIds={bookmarkedPostIds}
             onNavigate={navigate}
+            onToggleFollowAuthor={handleToggleFollowAuthor}
             onToggleSubscribe={handleToggleSubscribe}
             onToggleLike={handleTogglePostLike}
             onToggleBookmark={handleToggleBookmark}
@@ -779,6 +849,7 @@ function FolioAppContent() {
           <TopicView
             tag={route.tag}
             posts={posts}
+            commentCounts={commentCounts}
             likedPostIds={likedPostIds}
             bookmarkedPostIds={bookmarkedPostIds}
             onNavigate={navigate}
@@ -815,6 +886,15 @@ function FolioAppContent() {
                 activePublication &&
                   subscriptions.some((s) => s.publicationId === activePublication.id)
               )}
+              isSupporting={Boolean(
+                activePublication &&
+                  subscriptions.some(
+                    (s) =>
+                      s.publicationId === activePublication.id && s.tier === 'supporting'
+                  )
+              )}
+              isFollowingAuthor={followedAuthorIds.has(activePost.authorId)}
+              authorFollowerCount={authorFollowerCounts.get(activePost.authorId) || 0}
               isLiked={likedPostIds.has(activePost.id)}
               isBookmarked={bookmarkedPostIds.has(activePost.id)}
               savedProgress={activeProgressMap.get(activePost.id)}
@@ -823,6 +903,7 @@ function FolioAppContent() {
               onUpdateReaderPrefs={handleUpdateReaderPrefs}
               onNavigate={navigate}
               onToggleSubscribe={handleToggleSubscribe}
+              onToggleFollowAuthor={handleToggleFollowAuthor}
               onOpenMembershipCheckout={handleOpenMembershipCheckout}
               onToggleLike={handleTogglePostLike}
               onToggleBookmark={handleToggleBookmark}
@@ -853,19 +934,27 @@ function FolioAppContent() {
         {route.view === 'publication' &&
           (activePublication ? (
             <PublicationView
+              key={activePublication.id}
               publication={activePublication}
+              allPublications={publications}
               posts={posts.filter((p) => p.publicationId === activePublication.id)}
               subscription={subscriptions.find(
                 (s) => s.publicationId === activePublication.id
               )}
+              subscribedPubIds={new Set(subscriptions.map((s) => s.publicationId))}
+              commentCounts={commentCounts}
               likedPostIds={likedPostIds}
               bookmarkedPostIds={bookmarkedPostIds}
               readingProgressMap={activeProgressMap}
+              user={user}
+              profile={profile}
               onNavigate={navigate}
               onToggleSubscribe={handleToggleSubscribe}
               onOpenMembershipCheckout={handleOpenMembershipCheckout}
               onToggleLike={handleTogglePostLike}
               onToggleBookmark={handleToggleBookmark}
+              onSignIn={handleSignIn}
+              onNotify={notify}
             />
           ) : (
             <main className="max-w-[680px] mx-auto px-4 py-20 text-center">

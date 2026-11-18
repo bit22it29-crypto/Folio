@@ -15,6 +15,7 @@ import {
   Italic,
   Link2,
   Mail,
+  MessageSquare,
   Minus,
   Pin,
   Plus,
@@ -22,6 +23,7 @@ import {
   RotateCcw,
   Rss,
   Save,
+  Search,
   Send,
   Trash2,
   Upload,
@@ -34,6 +36,7 @@ import {
   createPublication,
   deletePost,
   deletePublication,
+  notifySubscribersOfIssue,
   recordNewsletterDispatch,
   seedStarterCatalog,
   setPublicationPinnedPost,
@@ -43,7 +46,7 @@ import {
   updateUserProfile,
 } from '../lib/firestoreService';
 import { formatEditorialDate, renderMarkdownToSafeHtml } from '../lib/markdown';
-import { estimateReadTimeMinutes, normalizeTags } from '../lib/validation';
+import { countWords, estimateReadTimeMinutes, normalizeTags } from '../lib/validation';
 import {
   CATEGORIES,
   type AccessTier,
@@ -62,9 +65,11 @@ interface WriterStudioViewProps {
   user: User | null;
   profile: UserProfile | null;
   userPublications: Publication[];
+  allPublications: Publication[];
   authorPosts: Post[];
   ownerSubscribers: Subscription[];
   ownerDispatches: NewsletterDispatch[];
+  commentCounts: Map<string, number>;
   hasFirestorePublications: boolean;
   initialEditPostId?: string;
   onNavigate: (route: AppRoute) => void;
@@ -126,9 +131,11 @@ export function WriterStudioView({
   user,
   profile,
   userPublications,
+  allPublications,
   authorPosts,
   ownerSubscribers,
   ownerDispatches,
+  commentCounts,
   hasFirestorePublications,
   initialEditPostId,
   onNavigate,
@@ -150,9 +157,14 @@ export function WriterStudioView({
   const [pubCategory, setPubCategory] = useState<Category>('Essays');
   const [pubAccent, setPubAccent] = useState('#8B5CF6');
   const [pubCover, setPubCover] = useState<string>(EDITORIAL_IMAGES.architecture);
+  const [pubRecommendedIds, setPubRecommendedIds] = useState<string[]>([]);
   const [uploadingPubCover, setUploadingPubCover] = useState(false);
   const [savingPub, setSavingPub] = useState(false);
   const [confirmDeletePub, setConfirmDeletePub] = useState(false);
+
+  // Posts tab filtering
+  const [postStatusFilter, setPostStatusFilter] = useState<'all' | PostStatus>('all');
+  const [postSearchQuery, setPostSearchQuery] = useState('');
 
   // Author Profile state
   const [authorNameInput, setAuthorNameInput] = useState('');
@@ -230,6 +242,7 @@ export function WriterStudioView({
       setPubCategory(activePub.category);
       setPubAccent(activePub.accentColor);
       setPubCover(activePub.coverImageUrl || EDITORIAL_IMAGES.architecture);
+      setPubRecommendedIds(activePub.recommendedPubIds || []);
       if (!editingPostId) {
         setPostCategory(activePub.category);
       }
@@ -440,6 +453,7 @@ export function WriterStudioView({
           category: pubCategory,
           accentColor: pubAccent,
           coverImageUrl: pubCover,
+          recommendedPubIds: pubRecommendedIds,
         });
         onNotify('Publication settings updated.');
       }
@@ -541,6 +555,17 @@ export function WriterStudioView({
               : 'Draft saved',
         });
         clearAutosaveKey(existing.id);
+        if (targetStatus === 'published' && existing.status !== 'published') {
+          void notifySubscribersOfIssue({
+            subscribers: pubSubscribers,
+            actorId: user.uid,
+            actorName: profile.displayName,
+            publicationName: activePub.name,
+            publicationSlug: activePub.slug,
+            postId: existing.id,
+            postTitle: title,
+          });
+        }
         onNotify(
           targetStatus === 'published'
             ? 'Issue updated and published.'
@@ -578,6 +603,17 @@ export function WriterStudioView({
         });
         clearAutosaveKey(null);
         setEditingPostId(newId);
+        if (targetStatus === 'published') {
+          void notifySubscribersOfIssue({
+            subscribers: pubSubscribers,
+            actorId: user.uid,
+            actorName: profile.displayName,
+            publicationName: activePub.name,
+            publicationSlug: activePub.slug,
+            postId: newId,
+            postTitle: title,
+          });
+        }
         onNotify(
           targetStatus === 'published'
             ? 'Issue published to your archive and RSS feed.'
@@ -765,6 +801,23 @@ export function WriterStudioView({
   const draftCount = pubPosts.filter((p) => p.status === 'draft').length;
   const supportingCount = pubSubscribers.filter((s) => s.tier === 'supporting').length;
   const totalLikes = pubPosts.reduce((sum, p) => sum + p.likesCount, 0);
+  const totalComments = pubPosts.reduce(
+    (sum, p) => sum + (commentCounts.get(p.id) || 0),
+    0
+  );
+  const filteredPubPosts = pubPosts.filter((p) => {
+    if (postStatusFilter !== 'all' && p.status !== postStatusFilter) return false;
+    const q = postSearchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      p.title.toLowerCase().includes(q) ||
+      p.subtitle.toLowerCase().includes(q) ||
+      (p.tags || []).some((t) => t.toLowerCase().includes(q))
+    );
+  });
+  const recommendablePubs = activePub
+    ? allPublications.filter((p) => p.id !== activePub.id && !p.isShowcase)
+    : [];
   const rssPath = activePub
     ? `${window.location.origin}/api/publications/${encodeURIComponent(activePub.slug)}/rss.xml`
     : '';
@@ -1412,6 +1465,7 @@ export function WriterStudioView({
                   </button>
 
                   <span className="ml-auto px-2 text-xs text-[var(--text-accent-soft)] tabular-nums">
+                    {countWords(contentMarkdown).toLocaleString()} words ·{' '}
                     {estimateReadTimeMinutes(contentMarkdown)} min read
                   </span>
                 </div>
@@ -1472,7 +1526,7 @@ export function WriterStudioView({
       {/* Tab 2: Posts, Scheduled & Drafts */}
       {studioTab === 'posts' && activePub && (
         <section>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
             <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)]">
               Issues & Drafts
             </h2>
@@ -1482,11 +1536,50 @@ export function WriterStudioView({
                 resetComposer();
                 setStudioTab('write');
               }}
-              className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] cursor-pointer"
+              className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] self-start sm:self-auto cursor-pointer"
             >
               New Issue
             </button>
           </div>
+
+          {pubPosts.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+              <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg overflow-x-auto self-start">
+                {(
+                  [
+                    { id: 'all', label: `All (${pubPosts.length})` },
+                    { id: 'published', label: `Published (${publishedCount})` },
+                    { id: 'scheduled', label: `Scheduled (${scheduledCount})` },
+                    { id: 'draft', label: `Drafts (${draftCount})` },
+                  ] as const
+                ).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setPostStatusFilter(item.id)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer tabular-nums ${
+                      postStatusFilter === item.id
+                        ? 'bg-[var(--accent-solid)] text-white'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={postSearchQuery}
+                  onChange={(e) => setPostSearchQuery(e.target.value)}
+                  placeholder="Filter issues by title or tag..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-border)]"
+                />
+              </div>
+            </div>
+          )}
 
           {pubPosts.length === 0 ? (
             <div className="border border-[var(--border-hairline)] rounded-xl p-10 text-center bg-[var(--bg-surface)]">
@@ -1501,10 +1594,17 @@ export function WriterStudioView({
                 Write First Issue
               </button>
             </div>
+          ) : filteredPubPosts.length === 0 ? (
+            <div className="border border-[var(--border-hairline)] rounded-xl p-8 text-center bg-[var(--bg-surface)]">
+              <p className="text-sm text-[var(--text-muted)]">
+                No issues match your current filter.
+              </p>
+            </div>
           ) : (
             <div className="divide-y divide-[var(--border-hairline)] border-y border-[var(--border-hairline)]">
-              {pubPosts.map((post) => {
+              {filteredPubPosts.map((post) => {
                 const isPinned = activePub.pinnedPostId === post.id;
+                const respCount = commentCounts.get(post.id) || 0;
                 return (
                   <div
                     key={post.id}
@@ -1548,6 +1648,8 @@ export function WriterStudioView({
                         </span>
                         <span aria-hidden="true">·</span>
                         <span className="tabular-nums">{post.likesCount} likes</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="tabular-nums">{respCount} responses</span>
                       </div>
                       <h3 className="font-display text-lg font-semibold text-[var(--text-primary)] truncate">
                         {post.title}
@@ -1595,6 +1697,17 @@ export function WriterStudioView({
                             accessTier: post.accessTier,
                             status: nextStatus,
                           });
+                          if (nextStatus === 'published' && profile) {
+                            void notifySubscribersOfIssue({
+                              subscribers: pubSubscribers,
+                              actorId: user.uid,
+                              actorName: profile.displayName,
+                              publicationName: activePub.name,
+                              publicationSlug: activePub.slug,
+                              postId: post.id,
+                              postTitle: post.title,
+                            });
+                          }
                           onNotify(
                             nextStatus === 'published'
                               ? 'Issue published.'
@@ -1787,12 +1900,12 @@ export function WriterStudioView({
             </div>
 
             <div className="p-5 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)]">
-              <p className="text-xs text-[var(--text-muted)] mb-1">Total Reader Likes</p>
+              <p className="text-xs text-[var(--text-muted)] mb-1">Reader Engagement</p>
               <p className="font-display text-3xl font-semibold text-[var(--text-primary)] tabular-nums">
                 {totalLikes}
               </p>
               <p className="text-xs text-[var(--text-muted)] mt-1 tabular-nums">
-                Across {pubPosts.length} {pubPosts.length === 1 ? 'issue' : 'issues'}
+                likes · {totalComments} {totalComments === 1 ? 'response' : 'responses'}
               </p>
             </div>
 
@@ -1810,7 +1923,7 @@ export function WriterStudioView({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="border border-[var(--border-hairline)] rounded-xl bg-[var(--bg-surface)] p-5">
               <h2 className="font-display text-xl font-semibold text-[var(--text-primary)] pb-3 border-b border-[var(--border-hairline)] mb-4">
-                Top Issues by Reader Likes
+                Top Issues by Reader Engagement
               </h2>
               {pubPosts.length === 0 ? (
                 <p className="text-sm text-[var(--text-muted)]">No issues written yet.</p>
@@ -1845,9 +1958,13 @@ export function WriterStudioView({
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs font-semibold text-[var(--text-accent)] tabular-nums shrink-0">
-                          {p.likesCount} likes
-                        </span>
+                        <div className="flex items-center gap-3 text-xs font-semibold text-[var(--text-accent)] tabular-nums shrink-0">
+                          <span>{p.likesCount} likes</span>
+                          <span className="inline-flex items-center gap-1 text-[var(--text-muted)] font-normal">
+                            <MessageSquare className="w-3 h-3" />
+                            <span>{commentCounts.get(p.id) || 0}</span>
+                          </span>
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -2025,6 +2142,61 @@ export function WriterStudioView({
                   </label>
                 </div>
               </div>
+
+              {recommendablePubs.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-[var(--text-body)]">
+                      Recommended Publications (Cross-Promotion)
+                    </label>
+                    <span className="text-[11px] text-[var(--text-muted)] tabular-nums">
+                      {pubRecommendedIds.length} / 4 selected
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mb-2.5">
+                    Endorse up to 4 peer publications on your public publication page.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)]">
+                    {recommendablePubs.map((candidate) => {
+                      const selected = pubRecommendedIds.includes(candidate.id);
+                      const atMax = !selected && pubRecommendedIds.length >= 4;
+                      return (
+                        <button
+                          key={candidate.id}
+                          type="button"
+                          disabled={atMax}
+                          onClick={() => {
+                            setPubRecommendedIds((prev) =>
+                              prev.includes(candidate.id)
+                                ? prev.filter((id) => id !== candidate.id)
+                                : prev.length < 4
+                                ? [...prev, candidate.id]
+                                : prev
+                            );
+                          }}
+                          className={`p-2.5 rounded-lg border text-left transition-colors flex items-center justify-between gap-2 cursor-pointer disabled:opacity-40 ${
+                            selected
+                              ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)]'
+                              : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] hover:border-[var(--accent-border)]'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                              {candidate.name}
+                            </p>
+                            <p className="text-[11px] text-[var(--text-muted)] truncate">
+                              {candidate.category} · {candidate.ownerName}
+                            </p>
+                          </div>
+                          {selected && (
+                            <Check className="w-3.5 h-3.5 text-[var(--text-accent)] shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                 <button

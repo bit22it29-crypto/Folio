@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ArrowLeft, Bookmark, Hash, Heart, Lock } from 'lucide-react';
+import { ArrowLeft, Bookmark, Hash, Heart, Lock, MessageSquare } from 'lucide-react';
 import { formatEditorialDate } from '../lib/markdown';
 import type { AppRoute, Post } from '../types/folio';
 import { EditorialImage } from './EditorialImage';
@@ -7,6 +7,7 @@ import { EditorialImage } from './EditorialImage';
 interface TopicViewProps {
   tag: string;
   posts: Post[];
+  commentCounts: Map<string, number>;
   likedPostIds: Set<string>;
   bookmarkedPostIds: Set<string>;
   onNavigate: (route: AppRoute) => void;
@@ -17,6 +18,7 @@ interface TopicViewProps {
 export function TopicView({
   tag,
   posts,
+  commentCounts,
   likedPostIds,
   bookmarkedPostIds,
   onNavigate,
@@ -174,6 +176,15 @@ export function TopicView({
                       }`}
                     />
                     <span>{post.likesCount}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate({ view: 'post', postId: post.id })}
+                    className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                    aria-label="View responses"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>{commentCounts.get(post.id) || 0}</span>
                   </button>
                   <button
                     type="button"
