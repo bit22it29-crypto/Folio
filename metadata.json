@@ -1,0 +1,6 @@
+{
+  "name": "Folio — Independent Publishing & Newsletter Network",
+  "description": "A full-stack editorial publishing platform where writers launch publications, publish long-form essays and subscriber newsletters, share short-form notes, and host reader discussions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

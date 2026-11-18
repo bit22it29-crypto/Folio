@@ -1,0 +1,911 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public writer and reader profile for Folio.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "handle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 320
+        },
+        "avatarUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "handle", "bio", "avatarUrl", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Private PII and notification preferences isolated per user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "digestFrequency": {
+          "type": "string",
+          "enum": ["immediate", "daily", "weekly"]
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "digestFrequency", "updatedAt"]
+    },
+    "Publication": {
+      "title": "Publication",
+      "description": "An independent newsletter publication.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "tagline": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Technology", "Culture", "Economics", "Design", "Science", "Essays"]
+        },
+        "accentColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "maxLength": 7
+        },
+        "coverImageUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "pinnedPostId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "welcomeNote": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "subscriberCount": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "ownerName",
+        "slug",
+        "name",
+        "tagline",
+        "description",
+        "category",
+        "accentColor",
+        "coverImageUrl",
+        "subscriberCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A long-form newsletter issue or essay belonging to a publication.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publicationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "publicationName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "publicationSlug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "subtitle": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "pattern": "^[a-z0-9\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Technology", "Culture", "Economics", "Design", "Science", "Essays"]
+        },
+        "tags": {
+          "type": "array",
+          "description": "Up to 5 topic tag labels for cross-publication discovery."
+        },
+        "coverImageUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "contentMarkdown": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 60000
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 360
+        },
+        "readTimeMinutes": {
+          "type": "integer"
+        },
+        "accessTier": {
+          "type": "string",
+          "enum": ["free", "subscribers"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "scheduled", "published"]
+        },
+        "scheduledFor": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "likesCount": {
+          "type": "integer"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "publicationId",
+        "authorId",
+        "authorName",
+        "authorAvatar",
+        "publicationName",
+        "publicationSlug",
+        "title",
+        "subtitle",
+        "slug",
+        "category",
+        "coverImageUrl",
+        "contentMarkdown",
+        "excerpt",
+        "readTimeMinutes",
+        "accessTier",
+        "status",
+        "likesCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PostRevision": {
+      "title": "PostRevision",
+      "description": "Versioned snapshot of an essay draft or published issue.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "subtitle": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "contentMarkdown": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 60000
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "postId", "authorId", "title", "subtitle", "contentMarkdown", "summary", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Reader discussion comment on a published essay.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postStatus": {
+          "type": "string",
+          "enum": ["published"]
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "parentCommentId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "editedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "postId", "postStatus", "authorId", "authorName", "authorAvatar", "body", "createdAt"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Reader subscription linking a user to a publication.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publicationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publicationOwnerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publicationName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "publicationSlug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "subscriberName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["free", "supporting"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "publicationId",
+        "publicationOwnerId",
+        "publicationName",
+        "publicationSlug",
+        "userId",
+        "subscriberName",
+        "tier",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PostLike": {
+      "title": "PostLike",
+      "description": "Atomic like record for an essay.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "postId", "userId", "createdAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Short-form writer dispatch or quoted essay note.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "authorHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "publicationId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "publicationName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "publicationSlug": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "quotedPostId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "quotedPostTitle": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "likesCount": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "authorName",
+        "authorHandle",
+        "authorAvatar",
+        "body",
+        "likesCount",
+        "createdAt"
+      ]
+    },
+    "NoteLike": {
+      "title": "NoteLike",
+      "description": "Atomic like record for a short-form note.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "noteId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "noteId", "userId", "createdAt"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "Saved essay in a reader's personal library.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "publicationName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "postId", "userId", "postTitle", "publicationName", "createdAt"]
+    },
+    "Highlight": {
+      "title": "Highlight",
+      "description": "Personal reader passage highlight and optional margin note.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "publicationName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "color": {
+          "type": "string",
+          "enum": ["purple", "amber", "emerald"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "postId", "postTitle", "publicationName", "quote", "note", "color", "createdAt", "updatedAt"]
+    },
+    "ReadingProgress": {
+      "title": "ReadingProgress",
+      "description": "Saved scroll depth and reading percentage per post per reader.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "percent": {
+          "type": "integer"
+        },
+        "scrollY": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "postId", "percent", "scrollY", "updatedAt"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "In-app reader and writer activity notification.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "recipientId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "actorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "actorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "type": {
+          "type": "string",
+          "enum": ["comment_reply", "post_comment", "note_like", "new_subscriber", "welcome"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 320
+        },
+        "postId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "publicationSlug": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "recipientId", "actorId", "actorName", "type", "title", "body", "read", "createdAt"]
+    },
+    "NewsletterDispatch": {
+      "title": "NewsletterDispatch",
+      "description": "Persistent record of a compiled newsletter dispatch sent by a publication owner.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publicationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "postId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "recipientCount": {
+          "type": "integer"
+        },
+        "messageId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "sentAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "publicationId", "ownerId", "title", "recipientCount", "messageId", "sentAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public writer and reader profiles without PII."
+    },
+    "/users/{userId}/private/info": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Isolated private email and digest settings for the authenticated owner."
+    },
+    "/publications/{pubId}": {
+      "schema": { "$ref": "#/entities/Publication" },
+      "description": "Independent newsletter publications."
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Essays and newsletter issues."
+    },
+    "/posts/{postId}/revisions/{revId}": {
+      "schema": { "$ref": "#/entities/PostRevision" },
+      "description": "Author-only revision snapshots for essays."
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Threaded comments on published posts."
+    },
+    "/subscriptions/{subId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "Subscriptions linking readers to publications."
+    },
+    "/postLikes/{likeId}": {
+      "schema": { "$ref": "#/entities/PostLike" },
+      "description": "Atomic like records for posts."
+    },
+    "/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "Short-form writer notes stream."
+    },
+    "/noteLikes/{likeId}": {
+      "schema": { "$ref": "#/entities/NoteLike" },
+      "description": "Atomic like records for notes."
+    },
+    "/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/Bookmark" },
+      "description": "Saved reading list bookmarks scoped to the reader."
+    },
+    "/highlights/{highlightId}": {
+      "schema": { "$ref": "#/entities/Highlight" },
+      "description": "Private reader passage highlights and margin notes."
+    },
+    "/readingProgress/{progressId}": {
+      "schema": { "$ref": "#/entities/ReadingProgress" },
+      "description": "Private reader scroll position and completion percentage."
+    },
+    "/notifications/{notifId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "Recipient-scoped reader and writer activity notifications."
+    },
+    "/dispatches/{dispatchId}": {
+      "schema": { "$ref": "#/entities/NewsletterDispatch" },
+      "description": "Newsletter dispatch logs owned by the publication author."
+    }
+  }
+}

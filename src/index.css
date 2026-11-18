@@ -1,0 +1,302 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    color-scheme: light;
+
+    --bg-canvas: #faf9fc;
+    --bg-header: rgba(250, 249, 252, 0.92);
+    --bg-surface: #ffffff;
+    --bg-surface-alt: #f3f1f8;
+    --bg-surface-hover: #ece8f6;
+    --bg-footer: #f3f1f8;
+    --bg-active-soft: #f1ecfe;
+    --bg-toast: #ffffff;
+
+    --border-hairline: #e4e0ee;
+    --border-subtle: #ece8f5;
+    --border-strong: #c9c0e0;
+
+    --text-primary: #14121d;
+    --text-heading: #110f18;
+    --text-body: #2d293b;
+    --text-secondary: #504a63;
+    --text-muted: #6a647e;
+    --text-placeholder: #7d7791;
+    --text-accent: #6d28d9;
+    --text-accent-soft: #7c3aed;
+
+    --text-danger: #b91c1c;
+    --bg-danger-soft: #fef2f2;
+    --bg-danger-hover: #fee2e2;
+    --border-danger: #fecaca;
+    --text-success: #15803d;
+    --text-warning: #b45309;
+
+    --prose-text: #262234;
+    --prose-heading: #110f18;
+    --prose-dropcap: #6d28d9;
+    --prose-quote: #3e3656;
+    --prose-quote-border: #dcd6ec;
+    --prose-strong: #09090d;
+    --prose-link: #6d28d9;
+    --prose-link-hover: #5b21b6;
+    --prose-pre-bg: #f3f1f8;
+    --prose-code-bg: #ede9fe;
+    --prose-code-text: #5b21b6;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --bg-canvas: #09090d;
+    --bg-header: rgba(9, 9, 13, 0.92);
+    --bg-surface: #14121d;
+    --bg-surface-alt: #100e18;
+    --bg-surface-hover: #1e1b2b;
+    --bg-footer: #0d0c13;
+    --bg-active-soft: #1f1b2e;
+    --bg-toast: #1b1630;
+
+    --border-hairline: #272338;
+    --border-subtle: #1e1b2b;
+    --border-strong: #3b3359;
+
+    --text-primary: #f4f3f8;
+    --text-heading: #f7f6fb;
+    --text-body: #e4e1ef;
+    --text-secondary: #b8b4c7;
+    --text-muted: #8b85a1;
+    --text-placeholder: #5f5a73;
+    --text-accent: #c4b5fd;
+    --text-accent-soft: #a78bfa;
+
+    --text-danger: #fca5a5;
+    --bg-danger-soft: #1a1014;
+    --bg-danger-hover: #2a141a;
+    --border-danger: #3b1e26;
+    --text-success: #86efac;
+    --text-warning: #fde68a;
+
+    --prose-text: #e4e1ef;
+    --prose-heading: #f7f6fb;
+    --prose-dropcap: #c4b5fd;
+    --prose-quote: #dcd6f7;
+    --prose-quote-border: #2b2640;
+    --prose-strong: #ffffff;
+    --prose-link: #a78bfa;
+    --prose-link-hover: #c4b5fd;
+    --prose-pre-bg: #13111c;
+    --prose-code-bg: #1c1829;
+    --prose-code-text: #d8b4fe;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: 0.005em;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  h1, h2, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+.headline-balance {
+  text-wrap: balance;
+}
+
+/* Editorial long-form article typography calibrated for both Obsidian dark and Daylight reading */
+.folio-prose {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.82;
+  letter-spacing: 0.01em;
+  color: var(--prose-text);
+}
+
+.folio-prose.folio-prose-serif {
+  font-family: var(--font-display);
+}
+
+.folio-highlight-mark {
+  background-color: rgba(139, 92, 246, 0.22);
+  color: inherit;
+  border-bottom: 1.5px solid #8b5cf6;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.folio-highlight-mark[data-color='amber'] {
+  background-color: rgba(245, 158, 11, 0.22);
+  border-bottom-color: #d97706;
+}
+
+.folio-highlight-mark[data-color='emerald'] {
+  background-color: rgba(16, 185, 129, 0.22);
+  border-bottom-color: #059669;
+}
+
+.folio-voice-clickable [data-voice-idx] {
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: background-color 180ms ease;
+}
+
+.folio-voice-clickable [data-voice-idx]:hover {
+  background-color: rgba(139, 92, 246, 0.06);
+}
+
+.folio-voice-active {
+  background-color: rgba(139, 92, 246, 0.12) !important;
+  box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.12);
+  border-radius: 0.375rem;
+}
+
+.folio-prose > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  font-size: 3.6rem;
+  font-weight: 600;
+  line-height: 0.85;
+  float: left;
+  margin-right: 0.75rem;
+  margin-top: 0.35rem;
+  color: var(--prose-dropcap);
+}
+
+.folio-prose p {
+  margin-bottom: 1.5rem;
+}
+
+.folio-prose h2 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--prose-heading);
+  margin-top: 2.75rem;
+  margin-bottom: 1rem;
+  text-wrap: balance;
+}
+
+.folio-prose h3 {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--prose-heading);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.folio-prose blockquote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  line-height: 1.5;
+  color: var(--prose-quote);
+  border-top: 1px solid var(--prose-quote-border);
+  border-bottom: 1px solid var(--prose-quote-border);
+  padding: 1.5rem 0;
+  margin: 2.25rem 0;
+  text-align: left;
+}
+
+.folio-prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.folio-prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.folio-prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.folio-prose li {
+  margin-bottom: 0.5rem;
+}
+
+.folio-prose strong {
+  color: var(--prose-strong);
+  font-weight: 600;
+}
+
+.folio-prose a {
+  color: var(--prose-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.folio-prose a:hover {
+  color: var(--prose-link-hover);
+}
+
+.folio-prose hr {
+  border: 0;
+  border-top: 1px solid var(--border-hairline);
+  margin: 2.75rem auto;
+  width: 38%;
+}
+
+.folio-prose pre {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  background-color: var(--prose-pre-bg);
+  border: 1px solid var(--border-hairline);
+  border-radius: 0.5rem;
+  padding: 1.125rem 1.25rem;
+  overflow-x: auto;
+  margin: 1.75rem 0;
+  color: var(--prose-text);
+}
+
+.folio-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background-color: var(--prose-code-bg);
+  color: var(--prose-code-text);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+}
+
+.folio-prose pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.folio-prose img {
+  border-radius: 0.5rem;
+  margin: 2rem 0;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border-hairline);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
