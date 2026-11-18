@@ -9,9 +9,21 @@ import { Navbar } from './components/Navbar';
 import { NotesView } from './components/NotesView';
 import { PostReaderView } from './components/PostReaderView';
 import { PublicationView } from './components/PublicationView';
+import { SettingsView } from './components/SettingsView';
 import { SubscriptionsView } from './components/SubscriptionsView';
 import { TopicView } from './components/TopicView';
 import { WriterStudioView } from './components/WriterStudioView';
+import {
+  applyThemeToDom,
+  DEFAULT_THEME_SETTINGS,
+  getLastDarkPreset,
+  getLastLightPreset,
+  getThemePresetMeta,
+  loadReaderPrefs,
+  loadThemeSettings,
+  saveReaderPrefs,
+  type ThemeSettings,
+} from './lib/theme';
 import {
   SHOWCASE_NOTES,
   SHOWCASE_POSTS,
@@ -56,6 +68,7 @@ import type {
   Note,
   Post,
   Publication,
+  ReaderPrefs,
   ReadingProgress,
   Subscription,
   UserProfile,
@@ -75,6 +88,7 @@ function parseRouteFromUrl(): AppRoute {
   if (view === 'notes') return { view: 'notes' };
   if (view === 'subscriptions') return { view: 'subscriptions' };
   if (view === 'studio') return { view: 'studio' };
+  if (view === 'settings') return { view: 'settings' };
   return { view: 'explore' };
 }
 
@@ -86,6 +100,7 @@ function buildUrlFromRoute(route: AppRoute): string {
   if (route.view === 'notes') return '/?view=notes';
   if (route.view === 'subscriptions') return '/?view=subscriptions';
   if (route.view === 'studio') return '/?view=studio';
+  if (route.view === 'settings') return '/?view=settings';
   return '/';
 }
 
@@ -172,30 +187,28 @@ function FolioAppContent() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [checkoutPub, setCheckoutPub] = useState<Publication | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    try {
-      return localStorage.getItem('folio-theme') === 'light' ? 'light' : 'dark';
-    } catch {
-      return 'dark';
-    }
-  });
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() =>
+    loadThemeSettings()
+  );
+  const [readerPrefs, setReaderPrefs] = useState<ReaderPrefs>(() => loadReaderPrefs());
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    try {
-      localStorage.setItem('folio-theme', theme);
-    } catch {
-      // Ignore storage failures
-    }
-  }, [theme]);
+    applyThemeToDom(themeSettings);
+  }, [themeSettings]);
+
+  const handleUpdateReaderPrefs = useCallback((next: ReaderPrefs) => {
+    setReaderPrefs(next);
+    saveReaderPrefs(next);
+  }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeSettings((prev) => {
+      const currentlyDark = getThemePresetMeta(prev.preset).isDark;
+      return {
+        ...prev,
+        preset: currentlyDark ? getLastLightPreset() : getLastDarkPreset(),
+      };
+    });
   }, []);
 
   const autoSeededUidRef = useRef<string | null>(null);
@@ -422,6 +435,10 @@ function FolioAppContent() {
       const title = `#${route.tag} — Folio Topic`;
       document.title = title;
       upsertMeta('property', 'og:title', title);
+      return;
+    }
+    if (route.view === 'settings') {
+      document.title = 'Appearance & Settings — Folio';
       return;
     }
     document.title = 'Folio — Independent Publishing & Reader Network';
@@ -664,7 +681,7 @@ function FolioAppContent() {
         onSignIn={handleSignIn}
         onSignOut={handleSignOut}
         authLoading={authLoading}
-        theme={theme}
+        themePreset={themeSettings.preset}
         onToggleTheme={toggleTheme}
         onOpenSearch={() => setSearchOpen(true)}
         notifications={notifications}
@@ -770,6 +787,22 @@ function FolioAppContent() {
           />
         )}
 
+        {route.view === 'settings' && (
+          <SettingsView
+            themeSettings={themeSettings}
+            onUpdateThemeSettings={setThemeSettings}
+            onResetThemeSettings={() => setThemeSettings(DEFAULT_THEME_SETTINGS)}
+            readerPrefs={readerPrefs}
+            onUpdateReaderPrefs={handleUpdateReaderPrefs}
+            user={user}
+            profile={profile}
+            onProfileUpdated={setProfile}
+            onSignIn={handleSignIn}
+            onNavigate={navigate}
+            onNotify={notify}
+          />
+        )}
+
         {route.view === 'post' &&
           (activePost ? (
             <PostReaderView
@@ -786,6 +819,8 @@ function FolioAppContent() {
               isBookmarked={bookmarkedPostIds.has(activePost.id)}
               savedProgress={activeProgressMap.get(activePost.id)}
               highlights={activeHighlights}
+              readerPrefs={readerPrefs}
+              onUpdateReaderPrefs={handleUpdateReaderPrefs}
               onNavigate={navigate}
               onToggleSubscribe={handleToggleSubscribe}
               onOpenMembershipCheckout={handleOpenMembershipCheckout}
@@ -808,7 +843,7 @@ function FolioAppContent() {
               <button
                 type="button"
                 onClick={() => navigate({ view: 'explore' })}
-                className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg cursor-pointer"
+                className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg cursor-pointer"
               >
                 Return to Dispatches
               </button>
@@ -840,7 +875,7 @@ function FolioAppContent() {
               <button
                 type="button"
                 onClick={() => navigate({ view: 'explore' })}
-                className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg cursor-pointer mt-4"
+                className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg cursor-pointer mt-4"
               >
                 Browse Dispatches
               </button>
@@ -879,6 +914,13 @@ function FolioAppContent() {
             >
               Studio
             </button>
+            <button
+              type="button"
+              onClick={() => navigate({ view: 'settings' })}
+              className="hover:text-[var(--text-accent)] cursor-pointer"
+            >
+              Settings
+            </button>
           </div>
         </div>
       </footer>
@@ -902,7 +944,7 @@ function FolioAppContent() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-5 right-5 z-50 bg-[var(--bg-toast)] border border-[#6D28D9] text-[var(--text-primary)] text-xs font-medium px-4 py-2.5 rounded-lg shadow-2xl max-w-sm"
+          className="fixed bottom-5 right-5 z-50 bg-[var(--bg-toast)] border border-[var(--accent-solid)] text-[var(--text-primary)] text-xs font-medium px-4 py-2.5 rounded-lg shadow-2xl max-w-sm"
         >
           {toast}
         </div>

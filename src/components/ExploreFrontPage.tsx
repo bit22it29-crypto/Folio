@@ -190,7 +190,7 @@ export function ExploreFrontPage({
                       aria-label={`Save ${leadPost.title}`}
                       className={`p-2 rounded-lg border transition-colors cursor-pointer ${
                         bookmarkedPostIds.has(leadPost.id)
-                          ? 'border-[#8B5CF6] bg-[#6D28D9]/30 text-[#DDD6FE]'
+                          ? 'border-[var(--accent-border)] bg-[var(--accent-solid)]/30 text-[#DDD6FE]'
                           : 'border-white/20 bg-[#09090D]/60 text-[#E4E1EF] hover:border-[#A78BFA]'
                       }`}
                     >
@@ -207,7 +207,7 @@ export function ExploreFrontPage({
                       aria-label={`Like ${leadPost.title}`}
                       className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors cursor-pointer tabular-nums ${
                         likedPostIds.has(leadPost.id)
-                          ? 'border-[#8B5CF6] bg-[#6D28D9]/30 text-[#DDD6FE]'
+                          ? 'border-[var(--accent-border)] bg-[var(--accent-solid)]/30 text-[#DDD6FE]'
                           : 'border-white/20 bg-[#09090D]/60 text-[#E4E1EF] hover:border-[#A78BFA]'
                       }`}
                     >
@@ -222,7 +222,7 @@ export function ExploreFrontPage({
                     <button
                       type="button"
                       onClick={() => onNavigate({ view: 'post', postId: leadPost.id })}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors whitespace-nowrap cursor-pointer"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap cursor-pointer"
                     >
                       <span>
                         {(readingProgressMap.get(leadPost.id)?.percent || 0) >= 5 &&
@@ -365,7 +365,7 @@ export function ExploreFrontPage({
             return (
               <div
                 key={pub.id}
-                className="bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-xl overflow-hidden flex flex-col justify-between hover:border-[#8B5CF6] transition-colors"
+                className="bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-xl overflow-hidden flex flex-col justify-between hover:border-[var(--accent-border)] transition-colors"
               >
                 <div>
                   <div
@@ -411,8 +411,8 @@ export function ExploreFrontPage({
                     onClick={() => onToggleSubscribe(pub)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                       isSub
-                        ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[#8B5CF6]'
-                        : 'bg-[#6D28D9] text-white hover:bg-[#7C3AED]'
+                        ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[var(--accent-border)]'
+                        : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
                     }`}
                   >
                     {isSub ? 'Subscribed' : 'Subscribe'}
@@ -436,7 +436,7 @@ export function ExploreFrontPage({
             onClick={() => setSelectedCategory('All')}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               selectedCategory === 'All'
-                ? 'bg-[#6D28D9] text-white'
+                ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]'
             }`}
           >
@@ -449,7 +449,7 @@ export function ExploreFrontPage({
               onClick={() => setSelectedCategory(category)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 selectedCategory === category
-                  ? 'bg-[#6D28D9] text-white'
+                  ? 'bg-[var(--accent-solid)] text-white'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]'
               }`}
             >
@@ -470,7 +470,7 @@ export function ExploreFrontPage({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter issues, #tags, writers..."
               aria-label="Filter issues, tags, or writers"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[#8B5CF6] transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-border)] transition-colors"
             />
           </div>
 
@@ -480,7 +480,7 @@ export function ExploreFrontPage({
               onClick={() => setSortMode('featured')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                 sortMode === 'featured'
-                  ? 'bg-[#6D28D9] text-white'
+                  ? 'bg-[var(--accent-solid)] text-white'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -491,7 +491,7 @@ export function ExploreFrontPage({
               onClick={() => setSortMode('latest')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                 sortMode === 'latest'
-                  ? 'bg-[#6D28D9] text-white'
+                  ? 'bg-[var(--accent-solid)] text-white'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -502,7 +502,7 @@ export function ExploreFrontPage({
               onClick={() => setSortMode('subscribers')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                 sortMode === 'subscribers'
-                  ? 'bg-[#6D28D9] text-white'
+                  ? 'bg-[var(--accent-solid)] text-white'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -528,7 +528,7 @@ export function ExploreFrontPage({
               setSearchQuery('');
               setSortMode('featured');
             }}
-            className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+            className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
           >
             Reset Filters
           </button>
@@ -653,7 +653,7 @@ export function ExploreFrontPage({
                               key={t}
                               type="button"
                               onClick={() => onNavigate({ view: 'topic', tag: t })}
-                              className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6] hover:text-[var(--text-primary)] cursor-pointer"
+                              className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-primary)] cursor-pointer"
                             >
                               #{t}
                             </button>

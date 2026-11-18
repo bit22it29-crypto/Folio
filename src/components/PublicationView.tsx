@@ -126,15 +126,15 @@ export function PublicationView({
               onClick={() => onToggleSubscribe(publication)}
               className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 isSubscribed
-                  ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[#8B5CF6]'
-                  : 'bg-[#6D28D9] text-white hover:bg-[#7C3AED]'
+                  ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[var(--accent-border)]'
+                  : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
               }`}
             >
               {isSubscribed ? 'Subscribed' : 'Subscribe Free'}
             </button>
 
             {isSupporting ? (
-              <span className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg border border-[#8B5CF6] bg-[var(--bg-active-soft)] text-[var(--text-accent)]">
+              <span className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg border border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]">
                 <Crown className="w-4 h-4" />
                 <span>Supporting Member</span>
               </span>
@@ -142,7 +142,7 @@ export function PublicationView({
               <button
                 type="button"
                 onClick={() => onOpenMembershipCheckout(publication)}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border border-[#8B5CF6] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-accent)] hover:bg-[var(--bg-active-soft)] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border border-[var(--accent-border)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-accent)] hover:bg-[var(--bg-active-soft)] transition-colors cursor-pointer"
               >
                 <Crown className="w-4 h-4" />
                 <span>Upgrade to Supporting ($7/mo)</span>
@@ -153,7 +153,7 @@ export function PublicationView({
               href={`/api/publications/${encodeURIComponent(publication.slug)}/rss.xml`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[#8B5CF6] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors"
             >
               <Rss className="w-4 h-4 text-[var(--text-accent-soft)]" />
               <span>RSS Feed</span>
@@ -162,7 +162,7 @@ export function PublicationView({
             <button
               type="button"
               onClick={handleCopyEmbed}
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[#8B5CF6] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-canvas)] text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
             >
               {copiedEmbed ? (
                 <>
@@ -193,7 +193,7 @@ export function PublicationView({
 
       {/* Pinned Featured Issue */}
       {pinnedPost && (
-        <section className="mt-8 p-6 rounded-2xl border border-[#8B5CF6]/60 bg-[var(--bg-surface)] flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <section className="mt-8 p-6 rounded-2xl border border-[var(--accent-border)]/60 bg-[var(--bg-surface)] flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex-1 min-w-0">
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-accent)] mb-2">
               <Pin className="w-3.5 h-3.5" />
@@ -219,7 +219,7 @@ export function PublicationView({
               <button
                 type="button"
                 onClick={() => onNavigate({ view: 'post', postId: pinnedPost.id })}
-                className="px-4 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
               >
                 Read Pinned Issue
               </button>
@@ -229,7 +229,7 @@ export function PublicationView({
                     key={t}
                     type="button"
                     onClick={() => onNavigate({ view: 'topic', tag: t })}
-                    className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[#8B5CF6] cursor-pointer"
+                    className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] cursor-pointer"
                   >
                     #{t}
                   </button>
@@ -364,7 +364,7 @@ export function PublicationView({
                             key={t}
                             type="button"
                             onClick={() => onNavigate({ view: 'topic', tag: t })}
-                            className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6] cursor-pointer"
+                            className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] cursor-pointer"
                           >
                             #{t}
                           </button>

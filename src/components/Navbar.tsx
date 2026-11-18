@@ -8,8 +8,10 @@ import {
   Moon,
   PenSquare,
   Search,
+  Settings,
   Sun,
 } from 'lucide-react';
+import { getThemePresetMeta, type ThemePresetId } from '../lib/theme';
 import { formatRelativeTime } from '../lib/markdown';
 import type {
   AppNotification,
@@ -27,7 +29,7 @@ interface NavbarProps {
   onSignIn: () => void;
   onSignOut: () => void;
   authLoading: boolean;
-  theme: 'dark' | 'light';
+  themePreset: ThemePresetId;
   onToggleTheme: () => void;
   onOpenSearch: () => void;
   notifications: AppNotification[];
@@ -45,7 +47,7 @@ export function Navbar({
   onSignIn,
   onSignOut,
   authLoading,
-  theme,
+  themePreset,
   onToggleTheme,
   onOpenSearch,
   notifications,
@@ -96,6 +98,8 @@ export function Navbar({
     return posts.filter((p) => subPubIds.has(p.publicationId)).slice(0, 3);
   }, [user, subscriptions, posts]);
 
+  const activeThemeMeta = getThemePresetMeta(themePreset);
+
   return (
     <header className="sticky top-0 z-40 bg-[var(--bg-header)] backdrop-blur-md border-b border-[var(--border-hairline)] transition-colors">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3 sm:gap-8">
@@ -103,7 +107,7 @@ export function Navbar({
         <button
           type="button"
           onClick={() => onNavigate({ view: 'explore' })}
-          className="font-display text-2xl font-semibold tracking-tight text-[var(--text-primary)] whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8B5CF6]"
+          className="font-display text-2xl font-semibold tracking-tight text-[var(--text-primary)] whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent-border)]"
         >
           Folio
         </button>
@@ -125,9 +129,9 @@ export function Navbar({
                 key={item.view}
                 type="button"
                 onClick={() => onNavigate({ view: item.view } as AppRoute)}
-                className={`text-sm font-medium whitespace-nowrap shrink-0 py-1 border-b-2 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8B5CF6] ${
+                className={`text-sm font-medium whitespace-nowrap shrink-0 py-1 border-b-2 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent-border)] ${
                   isActive
-                    ? 'text-[var(--text-primary)] border-[#8B5CF6]'
+                    ? 'text-[var(--text-primary)] border-[var(--accent-border)]'
                     : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
                 }`}
               >
@@ -137,14 +141,14 @@ export function Navbar({
           })}
         </nav>
 
-        {/* Zone 3: Search, Notifications, Theme Toggle & User Action */}
+        {/* Zone 3: Search, Notifications, Theme Toggle, Settings & User Action */}
         <div className="flex items-center gap-2 shrink-0 relative" ref={zone3Ref}>
           <button
             type="button"
             onClick={onOpenSearch}
             aria-label="Search Folio (Ctrl+K or Cmd+K)"
             title="Search essays, publications, #topics & writers (⌘K)"
-            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#8B5CF6] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-border)] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" aria-hidden="true" />
             <span className="hidden lg:inline font-mono text-[11px] text-[var(--text-muted)]">
@@ -162,11 +166,11 @@ export function Navbar({
                 }}
                 aria-label="Notifications"
                 aria-expanded={notifOpen}
-                className="relative inline-flex items-center justify-center p-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#8B5CF6] transition-colors cursor-pointer"
+                className="relative inline-flex items-center justify-center p-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
               >
                 <Bell className="w-4 h-4" aria-hidden="true" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#6D28D9] text-white text-[10px] font-semibold flex items-center justify-center tabular-nums">
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[var(--accent-solid)] text-white text-[10px] font-semibold flex items-center justify-center tabular-nums">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -277,29 +281,44 @@ export function Navbar({
             type="button"
             onClick={onToggleTheme}
             aria-label={
-              theme === 'dark'
-                ? 'Switch to Light mode'
-                : 'Switch to Obsidian dark theme'
+              activeThemeMeta.isDark
+                ? 'Switch to light reading theme'
+                : 'Switch to dark reading theme'
             }
-            aria-pressed={theme === 'light'}
-            title={
-              theme === 'dark'
-                ? 'Switch to Light mode for daytime reading'
-                : 'Switch to Obsidian dark theme'
-            }
-            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#8B5CF6] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#8B5CF6]"
+            aria-pressed={!activeThemeMeta.isDark}
+            title={`Current theme: ${activeThemeMeta.name} — Click to toggle dark/light`}
+            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-border)] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent-border)]"
           >
-            {theme === 'dark' ? (
+            {activeThemeMeta.isDark ? (
               <>
                 <Sun className="w-3.5 h-3.5 text-[#FDE68A]" aria-hidden="true" />
                 <span className="hidden md:inline">Light</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-[#6D28D9]" aria-hidden="true" />
-                <span className="hidden md:inline">Obsidian</span>
+                <Moon className="w-3.5 h-3.5 text-[var(--text-accent)]" aria-hidden="true" />
+                <span className="hidden md:inline">Dark</span>
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              setNotifOpen(false);
+              onNavigate({ view: 'settings' });
+            }}
+            aria-label="Appearance & Settings"
+            aria-current={route.view === 'settings' ? 'page' : undefined}
+            title="Theme Levels & Settings"
+            className={`inline-flex items-center justify-center p-2 rounded-lg border transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent-border)] ${
+              route.view === 'settings'
+                ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
+                : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-border)]'
+            }`}
+          >
+            <Settings className="w-4 h-4" aria-hidden="true" />
           </button>
 
           {user ? (
@@ -312,7 +331,7 @@ export function Navbar({
                 }}
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] hover:border-[#6D28D9] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#8B5CF6]"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] hover:border-[var(--accent-solid)] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent-border)]"
               >
                 {profile?.avatarUrl ? (
                   <img
@@ -322,7 +341,7 @@ export function Navbar({
                     className="w-6 h-6 rounded-full object-cover"
                   />
                 ) : (
-                  <span className="w-6 h-6 rounded-full bg-[#6D28D9] text-white text-xs font-medium flex items-center justify-center">
+                  <span className="w-6 h-6 rounded-full bg-[var(--accent-solid)] text-white text-xs font-medium flex items-center justify-center">
                     {initials}
                   </span>
                 )}
@@ -368,6 +387,18 @@ export function Navbar({
                     <BookMarked className="w-4 h-4 text-[var(--text-accent-soft)]" />
                     <span>Library & Inbox</span>
                   </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onNavigate({ view: 'settings' });
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-[var(--text-body)] hover:bg-[var(--bg-surface-hover)] flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <Settings className="w-4 h-4 text-[var(--text-accent-soft)]" />
+                    <span>Themes & Settings</span>
+                  </button>
                   <div className="border-t border-[var(--border-hairline)] mt-1 pt-1">
                     <button
                       type="button"
@@ -390,7 +421,7 @@ export function Navbar({
               type="button"
               disabled={authLoading}
               onClick={onSignIn}
-              className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-60 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6]"
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-60 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-border)]"
             >
               {authLoading ? 'Signing in...' : 'Sign In'}
             </button>

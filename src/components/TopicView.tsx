@@ -81,7 +81,7 @@ export function TopicView({
                 key={otherTag}
                 type="button"
                 onClick={() => onNavigate({ view: 'topic', tag: otherTag })}
-                className="px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[#8B5CF6] hover:text-[var(--text-primary)] transition-colors cursor-pointer tabular-nums"
+                className="px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-primary)] transition-colors cursor-pointer tabular-nums"
               >
                 #{otherTag} ({count})
               </button>
@@ -98,7 +98,7 @@ export function TopicView({
           <button
             type="button"
             onClick={() => onNavigate({ view: 'explore' })}
-            className="px-4 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg cursor-pointer"
+            className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg cursor-pointer"
           >
             Browse All Dispatches
           </button>
@@ -196,8 +196,8 @@ export function TopicView({
                       onClick={() => onNavigate({ view: 'topic', tag: t })}
                       className={`px-2 py-0.5 rounded-md border text-[11px] font-medium cursor-pointer ${
                         t.toLowerCase() === normalizedTag
-                          ? 'border-[#8B5CF6] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
-                          : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6]'
+                          ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
+                          : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)]'
                       }`}
                     >
                       #{t}

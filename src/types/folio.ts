@@ -212,6 +212,7 @@ export type AppRoute =
   | { view: 'notes' }
   | { view: 'subscriptions' }
   | { view: 'studio'; editPostId?: string }
+  | { view: 'settings' }
   | { view: 'post'; postId: string }
   | { view: 'publication'; slug: string }
   | { view: 'author'; authorId: string }

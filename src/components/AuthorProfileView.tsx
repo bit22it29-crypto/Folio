@@ -98,7 +98,7 @@ export function AuthorProfileView({
             className="w-20 h-20 rounded-full object-cover border border-[var(--border-strong)] shrink-0"
           />
         ) : (
-          <span className="w-20 h-20 rounded-full bg-[#6D28D9] text-white font-display text-2xl font-semibold flex items-center justify-center shrink-0">
+          <span className="w-20 h-20 rounded-full bg-[var(--accent-solid)] text-white font-display text-2xl font-semibold flex items-center justify-center shrink-0">
             {displayName.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -164,7 +164,7 @@ export function AuthorProfileView({
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg shrink-0 cursor-pointer ${
                       isSub
                         ? 'bg-[var(--bg-active-soft)] text-[var(--text-primary)] border border-[var(--border-strong)]'
-                        : 'bg-[#6D28D9] text-white hover:bg-[#7C3AED]'
+                        : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
                     }`}
                   >
                     {isSub ? 'Subscribed' : 'Subscribe'}
@@ -275,7 +275,7 @@ export function AuthorProfileView({
                             key={t}
                             type="button"
                             onClick={() => onNavigate({ view: 'topic', tag: t })}
-                            className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6] cursor-pointer"
+                            className="px-2 py-0.5 text-[11px] font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] cursor-pointer"
                           >
                             #{t}
                           </button>

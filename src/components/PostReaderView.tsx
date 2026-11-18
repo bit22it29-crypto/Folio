@@ -59,6 +59,8 @@ interface PostReaderViewProps {
   isBookmarked: boolean;
   savedProgress?: ReadingProgress;
   highlights: Highlight[];
+  readerPrefs?: ReaderPrefs;
+  onUpdateReaderPrefs?: (prefs: ReaderPrefs) => void;
   onNavigate: (route: AppRoute) => void;
   onToggleSubscribe: (pub: Publication) => void;
   onOpenMembershipCheckout?: (pub: Publication) => void;
@@ -176,6 +178,8 @@ export function PostReaderView({
   isBookmarked,
   savedProgress,
   highlights,
+  readerPrefs: externalReaderPrefs,
+  onUpdateReaderPrefs,
   onNavigate,
   onToggleSubscribe,
   onOpenMembershipCheckout,
@@ -210,7 +214,7 @@ export function PostReaderView({
 
   // Typography preferences
   const [typographyOpen, setTypographyOpen] = useState(false);
-  const [readerPrefs, setReaderPrefs] = useState<ReaderPrefs>(() => {
+  const [localReaderPrefs, setLocalReaderPrefs] = useState<ReaderPrefs>(() => {
     try {
       const raw = localStorage.getItem('folio-reader-prefs');
       if (raw) {
@@ -232,6 +236,16 @@ export function PostReaderView({
     }
     return DEFAULT_READER_PREFS;
   });
+
+  const readerPrefs = externalReaderPrefs ?? localReaderPrefs;
+  const setReaderPrefs = (updater: (prev: ReaderPrefs) => ReaderPrefs) => {
+    const next = updater(readerPrefs);
+    if (onUpdateReaderPrefs) {
+      onUpdateReaderPrefs(next);
+    } else {
+      setLocalReaderPrefs(next);
+    }
+  };
 
   // Voice reading state
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -692,7 +706,7 @@ export function PostReaderView({
         aria-hidden="true"
       >
         <div
-          className="h-full bg-[#8B5CF6] transition-[width] duration-75"
+          className="h-full bg-[var(--accent-border)] transition-[width] duration-75"
           style={{ width: `${scrollProgress}%` }}
         />
       </div>
@@ -738,8 +752,8 @@ export function PostReaderView({
               title="Listen with Voice Reading"
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
                 voiceOpen
-                  ? 'border-[#8B5CF6] bg-[#6D28D9]/15 text-[var(--text-accent)]'
-                  : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#8B5CF6]'
+                  ? 'border-[var(--accent-border)] bg-[var(--accent-solid)]/15 text-[var(--text-accent)]'
+                  : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-border)]'
               }`}
             >
               <Headphones className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" />
@@ -754,7 +768,7 @@ export function PostReaderView({
                 aria-expanded={typographyOpen}
                 aria-label="Reader typography settings"
                 title="Adjust font size, typeface & width"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-surface)] hover:border-[#8B5CF6] cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-surface)] hover:border-[var(--accent-border)] cursor-pointer"
               >
                 <Type className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" />
                 <span>Aa</span>
@@ -780,8 +794,8 @@ export function PostReaderView({
                           }
                           className={`py-1.5 text-xs font-medium rounded-md border cursor-pointer tabular-nums ${
                             readerPrefs.fontSize === sz
-                              ? 'bg-[#6D28D9] text-white border-[#8B5CF6]'
-                              : 'bg-[var(--bg-canvas)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[#8B5CF6]'
+                              ? 'bg-[var(--accent-solid)] text-white border-[var(--accent-border)]'
+                              : 'bg-[var(--bg-canvas)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[var(--accent-border)]'
                           }`}
                         >
                           {sz}px
@@ -804,8 +818,8 @@ export function PostReaderView({
                           }
                           className={`py-1.5 text-xs font-medium rounded-md border capitalize cursor-pointer ${
                             readerPrefs.fontFamily === fam
-                              ? 'bg-[#6D28D9] text-white border-[#8B5CF6]'
-                              : 'bg-[var(--bg-canvas)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[#8B5CF6]'
+                              ? 'bg-[var(--accent-solid)] text-white border-[var(--accent-border)]'
+                              : 'bg-[var(--bg-canvas)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[var(--accent-border)]'
                           }`}
                         >
                           {fam === 'sans' ? 'Modern Sans' : 'Editorial Serif'}
@@ -828,8 +842,8 @@ export function PostReaderView({
                           }
                           className={`py-1.5 text-xs font-medium rounded-md border capitalize cursor-pointer ${
                             readerPrefs.width === w
-                              ? 'bg-[#6D28D9] text-white border-[#8B5CF6]'
-                              : 'bg-[var(--bg-canvas)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[#8B5CF6]'
+                              ? 'bg-[var(--accent-solid)] text-white border-[var(--accent-border)]'
+                              : 'bg-[var(--bg-canvas)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[var(--accent-border)]'
                           }`}
                         >
                           {w}
@@ -859,7 +873,7 @@ export function PostReaderView({
                 className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
                   isSubscribed
                     ? 'bg-[var(--bg-active-soft)] text-[var(--text-body)] border border-[var(--border-strong)] hover:bg-[var(--bg-surface-hover)]'
-                    : 'bg-[#6D28D9] text-white hover:bg-[#7C3AED]'
+                    : 'bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)]'
                 }`}
               >
                 {isSubscribed ? 'Subscribed' : 'Subscribe'}
@@ -904,7 +918,7 @@ export function PostReaderView({
         >
           {/* Resume Reading Banner */}
           {showResumeBanner && savedProgress && (
-            <div className="mb-6 p-3.5 rounded-xl border border-[#8B5CF6]/50 bg-[var(--bg-active-soft)] flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-6 p-3.5 rounded-xl border border-[var(--accent-border)]/50 bg-[var(--bg-active-soft)] flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs font-medium text-[var(--text-primary)] tabular-nums">
                 You previously read <strong>{savedProgress.percent}%</strong> of this essay.
               </p>
@@ -912,7 +926,7 @@ export function PostReaderView({
                 <button
                   type="button"
                   onClick={handleResumeReading}
-                  className="px-3 py-1.5 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] cursor-pointer"
                 >
                   Resume from {savedProgress.percent}%
                 </button>
@@ -984,7 +998,7 @@ export function PostReaderView({
                     key={tag}
                     type="button"
                     onClick={() => onNavigate({ view: 'topic', tag })}
-                    className="px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6] hover:text-[var(--text-accent)] transition-colors cursor-pointer"
+                    className="px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-accent)] transition-colors cursor-pointer"
                   >
                     #{tag}
                   </button>
@@ -1002,7 +1016,7 @@ export function PostReaderView({
                     className="w-9 h-9 rounded-full object-cover border border-[var(--border-hairline)]"
                   />
                 ) : (
-                  <span className="w-9 h-9 rounded-full bg-[#6D28D9] text-white text-xs font-medium flex items-center justify-center">
+                  <span className="w-9 h-9 rounded-full bg-[var(--accent-solid)] text-white text-xs font-medium flex items-center justify-center">
                     {post.authorName.slice(0, 2).toUpperCase()}
                   </span>
                 )}
@@ -1034,8 +1048,8 @@ export function PostReaderView({
                   onClick={() => onToggleLike(post)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors cursor-pointer tabular-nums ${
                     isLiked
-                      ? 'border-[#8B5CF6] text-[var(--text-accent)] bg-[#6D28D9]/15 dark:bg-[#6D28D9]/25'
-                      : 'border-[var(--border-hairline)] text-[var(--text-secondary)] bg-[var(--bg-surface)] hover:border-[#8B5CF6]'
+                      ? 'border-[var(--accent-border)] text-[var(--text-accent)] bg-[var(--accent-solid)]/15 dark:bg-[var(--accent-solid)]/25'
+                      : 'border-[var(--border-hairline)] text-[var(--text-secondary)] bg-[var(--bg-surface)] hover:border-[var(--accent-border)]'
                   }`}
                 >
                   <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
@@ -1047,8 +1061,8 @@ export function PostReaderView({
                   onClick={() => onToggleBookmark(post)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors cursor-pointer ${
                     isBookmarked
-                      ? 'border-[#8B5CF6] text-[var(--text-accent)] bg-[#6D28D9]/15 dark:bg-[#6D28D9]/25'
-                      : 'border-[var(--border-hairline)] text-[var(--text-secondary)] bg-[var(--bg-surface)] hover:border-[#8B5CF6]'
+                      ? 'border-[var(--accent-border)] text-[var(--text-accent)] bg-[var(--accent-solid)]/15 dark:bg-[var(--accent-solid)]/25'
+                      : 'border-[var(--border-hairline)] text-[var(--text-secondary)] bg-[var(--bg-surface)] hover:border-[var(--accent-border)]'
                   }`}
                 >
                   <Bookmark
@@ -1060,7 +1074,7 @@ export function PostReaderView({
                 <button
                   type="button"
                   onClick={() => handleOpenQuoteSalon()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
                 >
                   <Quote className="w-3.5 h-3.5" />
                   <span>Quote in Salon</span>
@@ -1072,8 +1086,8 @@ export function PostReaderView({
                   aria-pressed={voiceOpen}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap cursor-pointer ${
                     voiceOpen
-                      ? 'border-[#8B5CF6] text-[var(--text-accent)] bg-[#6D28D9]/15 dark:bg-[#6D28D9]/25'
-                      : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6]'
+                      ? 'border-[var(--accent-border)] text-[var(--text-accent)] bg-[var(--accent-solid)]/15 dark:bg-[var(--accent-solid)]/25'
+                      : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)]'
                   }`}
                 >
                   <Headphones className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" />
@@ -1084,7 +1098,7 @@ export function PostReaderView({
                   type="button"
                   onClick={handleShare}
                   aria-label="Share this post"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
                 >
                   {copied ? (
                     <>
@@ -1147,7 +1161,7 @@ export function PostReaderView({
                 <button
                   type="button"
                   onClick={() => onToggleSubscribe(publication)}
-                  className="px-5 py-2.5 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+                  className="px-5 py-2.5 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
                 >
                   Subscribe Free to Read
                 </button>
@@ -1155,7 +1169,7 @@ export function PostReaderView({
                   <button
                     type="button"
                     onClick={() => onOpenMembershipCheckout(publication)}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium border border-[#8B5CF6] bg-[var(--bg-canvas)] text-[var(--text-accent)] rounded-lg hover:bg-[var(--bg-active-soft)] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium border border-[var(--accent-border)] bg-[var(--bg-canvas)] text-[var(--text-accent)] rounded-lg hover:bg-[var(--bg-active-soft)] transition-colors cursor-pointer"
                   >
                     <Crown className="w-4 h-4" />
                     <span>Become a Supporting Member ($7/mo)</span>
@@ -1223,8 +1237,8 @@ export function PostReaderView({
                 onClick={() => onToggleLike(post)}
                 className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors cursor-pointer tabular-nums ${
                   isLiked
-                    ? 'border-[#8B5CF6] text-[var(--text-accent)] bg-[#6D28D9]/15 dark:bg-[#6D28D9]/25'
-                    : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[#8B5CF6]'
+                    ? 'border-[var(--accent-border)] text-[var(--text-accent)] bg-[var(--accent-solid)]/15 dark:bg-[var(--accent-solid)]/25'
+                    : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent-border)]'
                 }`}
               >
                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
@@ -1238,8 +1252,8 @@ export function PostReaderView({
                 onClick={() => onToggleBookmark(post)}
                 className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors cursor-pointer ${
                   isBookmarked
-                    ? 'border-[#8B5CF6] text-[var(--text-accent)] bg-[#6D28D9]/15 dark:bg-[#6D28D9]/25'
-                    : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[#8B5CF6]'
+                    ? 'border-[var(--accent-border)] text-[var(--text-accent)] bg-[var(--accent-solid)]/15 dark:bg-[var(--accent-solid)]/25'
+                    : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent-border)]'
                 }`}
               >
                 <Bookmark
@@ -1250,7 +1264,7 @@ export function PostReaderView({
 
               <a
                 href="#discussion"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[#8B5CF6] transition-colors tabular-nums"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent-border)] transition-colors tabular-nums"
               >
                 <MessageSquare className="w-4 h-4 text-[var(--text-accent-soft)]" />
                 <span>
@@ -1262,7 +1276,7 @@ export function PostReaderView({
                 type="button"
                 onClick={handleShare}
                 aria-label="Share this post"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[#8B5CF6] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
               >
                 {copied ? (
                   <>
@@ -1303,7 +1317,7 @@ export function PostReaderView({
                     key={rel.id}
                     type="button"
                     onClick={() => onNavigate({ view: 'post', postId: rel.id })}
-                    className="text-left p-4 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] hover:border-[#8B5CF6] transition-colors cursor-pointer"
+                    className="text-left p-4 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
                   >
                     <p className="text-xs text-[var(--text-muted)] mb-1">
                       {formatEditorialDate(rel.publishedAt || rel.createdAt)} ·{' '}
@@ -1339,7 +1353,7 @@ export function PostReaderView({
                       onClick={() => setCommentSort(mode)}
                       className={`px-2.5 py-1 text-xs font-medium rounded-md capitalize cursor-pointer ${
                         commentSort === mode
-                          ? 'bg-[#6D28D9] text-white'
+                          ? 'bg-[var(--accent-solid)] text-white'
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                     >
@@ -1364,7 +1378,7 @@ export function PostReaderView({
                 <button
                   type="button"
                   onClick={onSignIn}
-                  className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors whitespace-nowrap cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Sign In to Comment
                 </button>
@@ -1379,7 +1393,7 @@ export function PostReaderView({
                   onClick={() => {
                     if (profile) void seedStarterCatalog(user, profile);
                   }}
-                  className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors whitespace-nowrap cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Enable Live Comments
                 </button>
@@ -1392,7 +1406,7 @@ export function PostReaderView({
                   rows={3}
                   maxLength={2000}
                   placeholder="Write a comment..."
-                  className="w-full p-4 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[#8B5CF6] transition-colors"
+                  className="w-full p-4 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-border)] transition-colors"
                 />
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-xs text-[var(--text-muted)] tabular-nums">
@@ -1402,7 +1416,7 @@ export function PostReaderView({
                     type="button"
                     disabled={submittingComment || !commentBody.trim()}
                     onClick={() => handlePostComment(null, null)}
-                    className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 transition-colors cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     {submittingComment ? 'Posting...' : 'Post Comment'}
                   </button>
@@ -1434,7 +1448,7 @@ export function PostReaderView({
                               className="w-7 h-7 rounded-full object-cover border border-[var(--border-hairline)]"
                             />
                           ) : (
-                            <span className="w-7 h-7 rounded-full bg-[#6D28D9] text-white text-xs flex items-center justify-center">
+                            <span className="w-7 h-7 rounded-full bg-[var(--accent-solid)] text-white text-xs flex items-center justify-center">
                               {comment.authorName.slice(0, 1).toUpperCase()}
                             </span>
                           )}
@@ -1500,7 +1514,7 @@ export function PostReaderView({
                             maxLength={2000}
                             value={editingCommentBody}
                             onChange={(e) => setEditingCommentBody(e.target.value)}
-                            className="w-full p-3 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+                            className="w-full p-3 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
                           />
                           <div className="flex items-center justify-end gap-2 mt-2">
                             <button
@@ -1514,7 +1528,7 @@ export function PostReaderView({
                               type="button"
                               disabled={savingCommentEdit || !editingCommentBody.trim()}
                               onClick={() => handleSaveCommentEdit(comment.id)}
-                              className="px-3 py-1 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                              className="px-3 py-1 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
                             >
                               {savingCommentEdit ? 'Saving...' : 'Save Edit'}
                             </button>
@@ -1548,14 +1562,14 @@ export function PostReaderView({
                             rows={2}
                             maxLength={2000}
                             placeholder={`Reply to ${comment.authorName}...`}
-                            className="w-full p-3 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[#8B5CF6]"
+                            className="w-full p-3 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-border)]"
                           />
                           <div className="flex justify-end mt-2">
                             <button
                               type="button"
                               disabled={submittingComment || !replyBody.trim()}
                               onClick={() => handlePostComment(comment.id, comment.authorId)}
-                              className="px-3.5 py-1.5 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                              className="px-3.5 py-1.5 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
                             >
                               {submittingComment ? 'Posting...' : 'Post Reply'}
                             </button>
@@ -1630,7 +1644,7 @@ export function PostReaderView({
                                       maxLength={2000}
                                       value={editingCommentBody}
                                       onChange={(e) => setEditingCommentBody(e.target.value)}
-                                      className="w-full p-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+                                      className="w-full p-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
                                     />
                                     <div className="flex justify-end gap-2 mt-1.5">
                                       <button
@@ -1644,7 +1658,7 @@ export function PostReaderView({
                                         type="button"
                                         disabled={savingCommentEdit || !editingCommentBody.trim()}
                                         onClick={() => handleSaveCommentEdit(reply.id)}
-                                        className="px-2.5 py-1 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                                        className="px-2.5 py-1 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
                                       >
                                         Save
                                       </button>
@@ -1746,7 +1760,7 @@ export function PostReaderView({
                   )
                 }
                 placeholder="Write a margin note..."
-                className="w-full p-2 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+                className="w-full p-2 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
               />
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1">
@@ -1784,7 +1798,7 @@ export function PostReaderView({
                     onClick={() =>
                       handleSaveHighlight(selectionState.color, selectionState.noteText)
                     }
-                    className="px-2.5 py-1 text-xs font-medium bg-[#6D28D9] text-white rounded-md hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                    className="px-2.5 py-1 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-md hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
                   >
                     {savingHighlight ? 'Saving...' : 'Save Note'}
                   </button>
@@ -1825,7 +1839,7 @@ export function PostReaderView({
               maxLength={600}
               value={quoteText}
               onChange={(e) => setQuoteText(e.target.value)}
-              className="w-full p-3.5 text-sm bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full p-3.5 text-sm bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
             />
             <div className="flex items-center justify-between mt-4">
               <span className="text-xs text-[var(--text-muted)] tabular-nums">
@@ -1835,7 +1849,7 @@ export function PostReaderView({
                 type="button"
                 disabled={postingQuote || !quoteText.trim()}
                 onClick={handlePublishQuoteNote}
-                className="px-4 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
               >
                 {postingQuote ? 'Sharing...' : 'Post to Salon'}
               </button>

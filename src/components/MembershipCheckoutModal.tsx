@@ -111,7 +111,7 @@ export function MembershipCheckoutModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-2.5 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+              className="w-full py-2.5 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
             >
               Continue Reading
             </button>
@@ -124,7 +124,7 @@ export function MembershipCheckoutModal({
                 onClick={() => setPlan('monthly')}
                 className={`p-3.5 rounded-xl border text-left transition-colors cursor-pointer ${
                   plan === 'monthly'
-                    ? 'border-[#8B5CF6] bg-[var(--bg-active-soft)]'
+                    ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)]'
                     : 'border-[var(--border-hairline)] bg-[var(--bg-canvas)] hover:border-[var(--border-strong)]'
                 }`}
               >
@@ -139,7 +139,7 @@ export function MembershipCheckoutModal({
                 onClick={() => setPlan('annual')}
                 className={`p-3.5 rounded-xl border text-left transition-colors cursor-pointer ${
                   plan === 'annual'
-                    ? 'border-[#8B5CF6] bg-[var(--bg-active-soft)]'
+                    ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)]'
                     : 'border-[var(--border-hairline)] bg-[var(--bg-canvas)] hover:border-[var(--border-strong)]'
                 }`}
               >
@@ -178,7 +178,7 @@ export function MembershipCheckoutModal({
               type="button"
               disabled={processing}
               onClick={handleComplete}
-              className="w-full py-2.5 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 transition-colors cursor-pointer tabular-nums"
+              className="w-full py-2.5 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors cursor-pointer tabular-nums"
             >
               {processing
                 ? 'Activating Membership...'

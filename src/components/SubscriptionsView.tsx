@@ -102,7 +102,7 @@ export function SubscriptionsView({
         <button
           type="button"
           onClick={onSignIn}
-          className="px-5 py-2.5 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+          className="px-5 py-2.5 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
         >
           Sign In with Google
         </button>
@@ -131,7 +131,7 @@ export function SubscriptionsView({
             onClick={() => setTab('inbox')}
             className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
               tab === 'inbox'
-                ? 'bg-[#6D28D9] text-white'
+                ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -142,7 +142,7 @@ export function SubscriptionsView({
             onClick={() => setTab('saved')}
             className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer tabular-nums ${
               tab === 'saved'
-                ? 'bg-[#6D28D9] text-white'
+                ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -153,7 +153,7 @@ export function SubscriptionsView({
             onClick={() => setTab('highlights')}
             className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer tabular-nums ${
               tab === 'highlights'
-                ? 'bg-[#6D28D9] text-white'
+                ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -164,7 +164,7 @@ export function SubscriptionsView({
             onClick={() => setTab('manage')}
             className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer tabular-nums ${
               tab === 'manage'
-                ? 'bg-[#6D28D9] text-white'
+                ? 'bg-[var(--accent-solid)] text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -192,7 +192,7 @@ export function SubscriptionsView({
                 onClick={() => handleDigestChange(freq)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md capitalize transition-colors cursor-pointer ${
                   digestFrequency === freq
-                    ? 'bg-[#6D28D9] text-white'
+                    ? 'bg-[var(--accent-solid)] text-white'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -216,7 +216,7 @@ export function SubscriptionsView({
             <button
               type="button"
               onClick={() => onNavigate({ view: 'explore' })}
-              className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
             >
               Browse Dispatches
             </button>
@@ -285,7 +285,7 @@ export function SubscriptionsView({
             <button
               type="button"
               onClick={() => onNavigate({ view: 'explore' })}
-              className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
             >
               Browse Dispatches
             </button>
@@ -338,7 +338,7 @@ export function SubscriptionsView({
                           updatedAt: null,
                         })
                       }
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[#8B5CF6] shrink-0 cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[var(--accent-border)] shrink-0 cursor-pointer"
                     >
                       <BookmarkIcon className="w-3.5 h-3.5 fill-current" />
                       <span>Remove</span>
@@ -446,7 +446,7 @@ export function SubscriptionsView({
           <button
             type="button"
             onClick={() => onNavigate({ view: 'explore' })}
-            className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+            className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
           >
             Browse Dispatches
           </button>
@@ -570,7 +570,7 @@ export function SubscriptionsView({
                       {sub.publicationName}
                     </button>
                     {sub.tier === 'supporting' && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded border border-[#8B5CF6] text-[var(--text-accent)]">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded border border-[var(--accent-border)] text-[var(--text-accent)]">
                         <Crown className="w-2.5 h-2.5" />
                         Supporting
                       </span>
@@ -592,7 +592,7 @@ export function SubscriptionsView({
                         await updateSubscriptionTier(sub.id, 'free');
                         onNotify(`Switched ${sub.publicationName} to free tier.`);
                       }}
-                      className="px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[#8B5CF6] transition-colors cursor-pointer"
+                      className="px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[var(--accent-border)] transition-colors cursor-pointer"
                     >
                       Switch to Free
                     </button>
@@ -601,7 +601,7 @@ export function SubscriptionsView({
                       <button
                         type="button"
                         onClick={() => onOpenMembershipCheckout(pub)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[#8B5CF6] bg-[var(--bg-active-soft)] rounded-lg text-[var(--text-accent)] hover:bg-[#6D28D9] hover:text-white transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--accent-border)] bg-[var(--bg-active-soft)] rounded-lg text-[var(--text-accent)] hover:bg-[var(--accent-solid)] hover:text-white transition-colors cursor-pointer"
                       >
                         <Crown className="w-3.5 h-3.5" />
                         <span>Upgrade to Supporting</span>

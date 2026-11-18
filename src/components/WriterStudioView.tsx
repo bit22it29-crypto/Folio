@@ -745,7 +745,7 @@ export function WriterStudioView({
         <button
           type="button"
           onClick={onSignIn}
-          className="px-5 py-3 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors cursor-pointer"
+          className="px-5 py-3 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
         >
           Sign In with Google to Start Writing
         </button>
@@ -785,7 +785,7 @@ export function WriterStudioView({
             <button
               type="button"
               onClick={() => setCreatingPub(false)}
-              className="px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-body)] rounded-lg hover:border-[#8B5CF6] self-start cursor-pointer"
+              className="px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-body)] rounded-lg hover:border-[var(--accent-border)] self-start cursor-pointer"
             >
               Cancel
             </button>
@@ -806,7 +806,7 @@ export function WriterStudioView({
               type="button"
               disabled={seeding}
               onClick={handleSeedCatalog}
-              className="px-4 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 whitespace-nowrap cursor-pointer"
+              className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 whitespace-nowrap cursor-pointer"
             >
               {seeding ? 'Importing...' : 'Import Sample Catalog'}
             </button>
@@ -825,7 +825,7 @@ export function WriterStudioView({
               value={pubName}
               onChange={(e) => setPubName(e.target.value)}
               placeholder="e.g. Obsidian Quarterly"
-              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[var(--accent-border)]"
             />
           </div>
 
@@ -840,7 +840,7 @@ export function WriterStudioView({
               value={pubTagline}
               onChange={(e) => setPubTagline(e.target.value)}
               placeholder="What readers can expect in their inbox"
-              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[var(--accent-border)]"
             />
           </div>
 
@@ -852,7 +852,7 @@ export function WriterStudioView({
               <select
                 value={pubCategory}
                 onChange={(e) => setPubCategory(e.target.value as Category)}
-                className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+                className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -895,7 +895,7 @@ export function WriterStudioView({
               value={pubDescription}
               onChange={(e) => setPubDescription(e.target.value)}
               placeholder="Tell readers about your publishing cadence and focus..."
-              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[var(--accent-border)]"
             />
           </div>
 
@@ -909,7 +909,7 @@ export function WriterStudioView({
               value={pubWelcomeNote}
               onChange={(e) => setPubWelcomeNote(e.target.value)}
               placeholder="Optional greeting sent to readers the moment they subscribe..."
-              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3.5 py-2.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[var(--accent-border)]"
             />
           </div>
 
@@ -925,8 +925,8 @@ export function WriterStudioView({
                   onClick={() => setPubCover(preset.url)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg border cursor-pointer ${
                     pubCover === preset.url
-                      ? 'bg-[#6D28D9] text-white border-[#8B5CF6]'
-                      : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[#8B5CF6]'
+                      ? 'bg-[var(--accent-solid)] text-white border-[var(--accent-border)]'
+                      : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:border-[var(--accent-border)]'
                   }`}
                 >
                   {preset.label}
@@ -941,7 +941,7 @@ export function WriterStudioView({
                 placeholder="Or paste custom cover image URL..."
                 className="flex-1 px-3 py-2 text-xs bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)]"
               />
-              <label className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[#8B5CF6] cursor-pointer shrink-0">
+              <label className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[var(--accent-border)] cursor-pointer shrink-0">
                 <Upload className="w-3.5 h-3.5" />
                 <span>{uploadingPubCover ? 'Uploading...' : 'Upload File'}</span>
                 <input
@@ -961,7 +961,7 @@ export function WriterStudioView({
             <button
               type="submit"
               disabled={savingPub}
-              className="px-5 py-2.5 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 transition-colors cursor-pointer"
+              className="px-5 py-2.5 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors cursor-pointer"
             >
               {savingPub ? 'Creating...' : 'Create Publication'}
             </button>
@@ -980,7 +980,7 @@ export function WriterStudioView({
             value={activePub?.id || ''}
             onChange={(e) => setSelectedPubId(e.target.value)}
             aria-label="Select publication"
-            className="font-display text-xl font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg px-3 py-1.5 text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+            className="font-display text-xl font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-lg px-3 py-1.5 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
           >
             {userPublications.map((p) => (
               <option key={p.id} value={p.id}>
@@ -998,7 +998,7 @@ export function WriterStudioView({
               setPubWelcomeNote('');
               setCreatingPub(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[#8B5CF6] cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[var(--accent-border)] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Publication</span>
@@ -1031,7 +1031,7 @@ export function WriterStudioView({
               onClick={() => setStudioTab(item.id)}
               className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                 studioTab === item.id
-                  ? 'bg-[#6D28D9] text-white'
+                  ? 'bg-[var(--accent-solid)] text-white'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -1046,7 +1046,7 @@ export function WriterStudioView({
         <section>
           {/* Recoverable Auto-save Notice */}
           {recoverableDraft && (
-            <div className="mb-5 p-3.5 rounded-xl border border-[#8B5CF6]/50 bg-[var(--bg-active-soft)] flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-5 p-3.5 rounded-xl border border-[var(--accent-border)]/50 bg-[var(--bg-active-soft)] flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs font-medium text-[var(--text-primary)]">
                 Unsaved local auto-save found ({recoverableDraft.savedAt || 'recent'}).
               </p>
@@ -1060,7 +1060,7 @@ export function WriterStudioView({
                     setRecoverableDraft(null);
                     onNotify('Restored local auto-save.');
                   }}
-                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-[#6D28D9] text-white rounded-lg cursor-pointer"
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>Restore</span>
@@ -1086,7 +1086,7 @@ export function WriterStudioView({
                     onClick={() => setEditorMode(m)}
                     className={`px-3 py-1 text-xs font-medium rounded-md capitalize cursor-pointer ${
                       editorMode === m
-                        ? 'bg-[#6D28D9] text-white'
+                        ? 'bg-[var(--accent-solid)] text-white'
                         : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                     }`}
                   >
@@ -1107,7 +1107,7 @@ export function WriterStudioView({
                   <button
                     type="button"
                     onClick={() => setRevisionsOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-secondary)] hover:border-[#8B5CF6] cursor-pointer tabular-nums"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-secondary)] hover:border-[var(--accent-border)] cursor-pointer tabular-nums"
                   >
                     <History className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" />
                     <span>Revisions ({revisions.length})</span>
@@ -1129,7 +1129,7 @@ export function WriterStudioView({
                   disabled={savingSnapshot}
                   onClick={handleSaveManualSnapshot}
                   title="Save Revision Snapshot"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-secondary)] hover:border-[#8B5CF6] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-secondary)] hover:border-[var(--accent-border)] cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">
@@ -1141,7 +1141,7 @@ export function WriterStudioView({
               <button
                 type="button"
                 onClick={handleOpenEmailPreview}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-primary)] hover:border-[#8B5CF6] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-primary)] hover:border-[var(--accent-border)] cursor-pointer"
               >
                 <Mail className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" />
                 <span>Email Preview</span>
@@ -1151,7 +1151,7 @@ export function WriterStudioView({
                 type="button"
                 disabled={savingPost}
                 onClick={() => handleSavePost('draft')}
-                className="px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[#8B5CF6] disabled:opacity-50 cursor-pointer"
+                className="px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[var(--accent-border)] disabled:opacity-50 cursor-pointer"
               >
                 Save Draft
               </button>
@@ -1161,7 +1161,7 @@ export function WriterStudioView({
                 disabled={savingPost || !scheduledForInput}
                 onClick={() => handleSavePost('scheduled')}
                 title="Schedule Issue for selected date & time"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[#8B5CF6] bg-[var(--bg-active-soft)] rounded-lg text-[var(--text-accent)] hover:bg-[#6D28D9] hover:text-white disabled:opacity-40 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--accent-border)] bg-[var(--bg-active-soft)] rounded-lg text-[var(--text-accent)] hover:bg-[var(--accent-solid)] hover:text-white disabled:opacity-40 cursor-pointer"
               >
                 <CalendarClock className="w-3.5 h-3.5" />
                 <span>Schedule</span>
@@ -1171,7 +1171,7 @@ export function WriterStudioView({
                 type="button"
                 disabled={savingPost}
                 onClick={() => handleSavePost('published')}
-                className="px-4 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
               >
                 {savingPost ? 'Saving...' : 'Publish Issue'}
               </button>
@@ -1264,7 +1264,7 @@ export function WriterStudioView({
                     placeholder="https://... or /uploads/..."
                     className="flex-1 px-3 py-1.5 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)]"
                   />
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-canvas)] rounded-lg text-[var(--text-accent)] hover:border-[#8B5CF6] cursor-pointer shrink-0">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-canvas)] rounded-lg text-[var(--text-accent)] hover:border-[var(--accent-border)] cursor-pointer shrink-0">
                     <ImagePlus className="w-3.5 h-3.5" />
                     <span>{uploadingPostCover ? 'Uploading...' : 'Upload'}</span>
                     <input
@@ -1341,7 +1341,7 @@ export function WriterStudioView({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Issue headline..."
-                  className="w-full font-display text-3xl font-semibold bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] border-0 border-b border-[var(--border-hairline)] pb-3 focus:outline-none focus:border-[#8B5CF6]"
+                  className="w-full font-display text-3xl font-semibold bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] border-0 border-b border-[var(--border-hairline)] pb-3 focus:outline-none focus:border-[var(--accent-border)]"
                 />
                 <input
                   type="text"
@@ -1349,7 +1349,7 @@ export function WriterStudioView({
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
                   placeholder="Optional subtitle or deck..."
-                  className="w-full text-base bg-transparent text-[var(--text-secondary)] placeholder:text-[var(--text-placeholder)] border-0 border-b border-[var(--border-subtle)] pb-3 focus:outline-none focus:border-[#8B5CF6]"
+                  className="w-full text-base bg-transparent text-[var(--text-secondary)] placeholder:text-[var(--text-placeholder)] border-0 border-b border-[var(--border-subtle)] pb-3 focus:outline-none focus:border-[var(--accent-border)]"
                 />
 
                 {/* Markdown Toolbar */}
@@ -1423,7 +1423,7 @@ export function WriterStudioView({
                   value={contentMarkdown}
                   onChange={(e) => setContentMarkdown(e.target.value)}
                   placeholder="Write your essay in Markdown..."
-                  className="w-full p-4 text-[15px] leading-relaxed bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[#8B5CF6] font-sans"
+                  className="w-full p-4 text-[15px] leading-relaxed bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] focus:outline-none focus:border-[var(--accent-border)] font-sans"
                 />
               </div>
             )}
@@ -1482,7 +1482,7 @@ export function WriterStudioView({
                 resetComposer();
                 setStudioTab('write');
               }}
-              className="px-4 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] cursor-pointer"
+              className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] cursor-pointer"
             >
               New Issue
             </button>
@@ -1496,7 +1496,7 @@ export function WriterStudioView({
               <button
                 type="button"
                 onClick={() => setStudioTab('write')}
-                className="px-4 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg cursor-pointer"
+                className="px-4 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg cursor-pointer"
               >
                 Write First Issue
               </button>
@@ -1571,8 +1571,8 @@ export function WriterStudioView({
                           }}
                           className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border rounded-lg cursor-pointer ${
                             isPinned
-                              ? 'border-[#8B5CF6] bg-[#6D28D9]/15 text-[var(--text-accent)]'
-                              : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#8B5CF6]'
+                              ? 'border-[var(--accent-border)] bg-[var(--accent-solid)]/15 text-[var(--text-accent)]'
+                              : 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent-border)]'
                           }`}
                         >
                           <Pin className="w-3.5 h-3.5" />
@@ -1601,7 +1601,7 @@ export function WriterStudioView({
                               : 'Reverted to draft.'
                           );
                         }}
-                        className="px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[#8B5CF6] cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-accent)] hover:border-[var(--accent-border)] cursor-pointer"
                       >
                         {post.status === 'published' ? 'Unpublish' : 'Publish Now'}
                       </button>
@@ -1610,7 +1610,7 @@ export function WriterStudioView({
                         <button
                           type="button"
                           onClick={() => onNavigate({ view: 'post', postId: post.id })}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[#8B5CF6] cursor-pointer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[var(--accent-border)] cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>View</span>
@@ -1619,7 +1619,7 @@ export function WriterStudioView({
                       <button
                         type="button"
                         onClick={() => loadPostIntoEditor(post)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[#8B5CF6] cursor-pointer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-body)] hover:border-[var(--accent-border)] cursor-pointer"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Edit</span>
@@ -1685,7 +1685,7 @@ export function WriterStudioView({
                   setCopiedRss(true);
                   setTimeout(() => setCopiedRss(false), 2000);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-body)] hover:border-[#8B5CF6] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-body)] hover:border-[var(--accent-border)] cursor-pointer"
               >
                 {copiedRss ? (
                   <Check className="w-3.5 h-3.5 text-[var(--text-success)]" />
@@ -1698,7 +1698,7 @@ export function WriterStudioView({
                 href={rssPath}
                 target="_blank"
                 rel="noreferrer"
-                className="px-3 py-1.5 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED]"
+                className="px-3 py-1.5 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)]"
               >
                 Open XML
               </a>
@@ -1714,7 +1714,7 @@ export function WriterStudioView({
                 <button
                   type="button"
                   onClick={handleExportSubscribersCsv}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-primary)] hover:border-[#8B5CF6] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-lg text-[var(--text-primary)] hover:border-[var(--accent-border)] cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5 text-[var(--text-accent-soft)]" />
                   <span>Export CSV</span>
@@ -2010,7 +2010,7 @@ export function WriterStudioView({
                     placeholder="https://... or /uploads/..."
                     className="flex-1 px-3.5 py-2 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)]"
                   />
-                  <label className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-canvas)] rounded-lg text-[var(--text-accent)] hover:border-[#8B5CF6] cursor-pointer shrink-0">
+                  <label className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-canvas)] rounded-lg text-[var(--text-accent)] hover:border-[var(--accent-border)] cursor-pointer shrink-0">
                     <Upload className="w-3.5 h-3.5" />
                     <span>{uploadingPubCover ? 'Uploading...' : 'Upload'}</span>
                     <input
@@ -2030,7 +2030,7 @@ export function WriterStudioView({
                 <button
                   type="submit"
                   disabled={savingPub}
-                  className="px-5 py-2.5 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
                 >
                   {savingPub ? 'Saving...' : 'Save Settings'}
                 </button>
@@ -2114,7 +2114,7 @@ export function WriterStudioView({
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="px-5 py-2.5 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
               >
                 {savingProfile ? 'Updating...' : 'Save Author Profile'}
               </button>
@@ -2182,7 +2182,7 @@ export function WriterStudioView({
                         setRevisionsOpen(false);
                         onNotify('Restored revision into editor.');
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-canvas)] rounded-md text-[var(--text-primary)] hover:border-[#8B5CF6] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border border-[var(--border-hairline)] bg-[var(--bg-canvas)] rounded-md text-[var(--text-primary)] hover:border-[var(--accent-border)] cursor-pointer"
                     >
                       <RotateCcw className="w-3 h-3" />
                       <span>Restore This Version</span>
@@ -2218,7 +2218,7 @@ export function WriterStudioView({
                   type="button"
                   onClick={handleSendDispatch}
                   disabled={dispatchingEmail || !emailHtml}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>
@@ -2231,7 +2231,7 @@ export function WriterStudioView({
                   type="button"
                   onClick={handleCopyEmailHtml}
                   disabled={!emailHtml}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-canvas)] border border-[var(--border-hairline)] text-[var(--text-primary)] rounded-lg hover:border-[#8B5CF6] disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-canvas)] border border-[var(--border-hairline)] text-[var(--text-primary)] rounded-lg hover:border-[var(--accent-border)] disabled:opacity-50 cursor-pointer"
                 >
                   {copiedEmail ? (
                     <Check className="w-3.5 h-3.5 text-[var(--text-success)]" />

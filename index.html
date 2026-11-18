@@ -5,15 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       (function () {
+        var root = document.documentElement;
         try {
-          var saved = localStorage.getItem('folio-theme');
-          if (saved === 'light') {
-            document.documentElement.classList.remove('dark');
-          } else {
-            document.documentElement.classList.add('dark');
-          }
+          var rawTheme = localStorage.getItem('folio-theme');
+          var theme = rawTheme === 'light' ? 'daylight' : (rawTheme === 'dark' || !rawTheme ? 'obsidian' : rawTheme);
+          var valid = ['pitch', 'obsidian', 'midnight', 'daylight', 'parchment', 'sepia'];
+          if (valid.indexOf(theme) === -1) theme = 'obsidian';
+          var isDark = theme === 'pitch' || theme === 'obsidian' || theme === 'midnight';
+          if (isDark) root.classList.add('dark');
+          else root.classList.remove('dark');
+          root.setAttribute('data-theme', theme);
+
+          var contrast = localStorage.getItem('folio-theme-contrast');
+          if (contrast !== 'soft' && contrast !== 'high') contrast = 'balanced';
+          root.setAttribute('data-contrast', contrast);
+
+          var accent = localStorage.getItem('folio-theme-accent');
+          if (['violet', 'amethyst', 'indigo', 'plum'].indexOf(accent) === -1) accent = 'violet';
+          root.setAttribute('data-accent', accent);
+
+          var reduced = localStorage.getItem('folio-reduced-motion') === 'true';
+          root.setAttribute('data-motion', reduced ? 'reduced' : 'standard');
         } catch (e) {
-          document.documentElement.classList.add('dark');
+          root.classList.add('dark');
+          root.setAttribute('data-theme', 'obsidian');
+          root.setAttribute('data-contrast', 'balanced');
+          root.setAttribute('data-accent', 'violet');
+          root.setAttribute('data-motion', 'standard');
         }
       })();
     </script>

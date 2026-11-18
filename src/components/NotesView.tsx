@@ -93,7 +93,7 @@ export function NotesView({
               rows={3}
               maxLength={600}
               placeholder="Share a quick observation, quote, or work-in-progress..."
-              className="w-full p-3.5 text-sm bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full p-3.5 text-sm bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-border)]"
             />
 
             <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -122,7 +122,7 @@ export function NotesView({
                 type="button"
                 disabled={posting || !body.trim()}
                 onClick={handlePublishNote}
-                className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] disabled:opacity-50 transition-colors whitespace-nowrap cursor-pointer"
+                className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors whitespace-nowrap cursor-pointer"
               >
                 {posting ? 'Posting...' : 'Post Note'}
               </button>
@@ -136,7 +136,7 @@ export function NotesView({
             <button
               type="button"
               onClick={onSignIn}
-              className="px-4 py-2 text-sm font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors whitespace-nowrap cursor-pointer"
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap cursor-pointer"
             >
               Sign In
             </button>
@@ -172,10 +172,10 @@ export function NotesView({
                         src={note.authorAvatar}
                         alt={note.authorName}
                         referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-full object-cover border border-[var(--border-hairline)] hover:border-[#8B5CF6] transition-colors"
+                        className="w-9 h-9 rounded-full object-cover border border-[var(--border-hairline)] hover:border-[var(--accent-border)] transition-colors"
                       />
                     ) : (
-                      <span className="w-9 h-9 rounded-full bg-[#6D28D9] text-white text-xs font-medium flex items-center justify-center">
+                      <span className="w-9 h-9 rounded-full bg-[var(--accent-solid)] text-white text-xs font-medium flex items-center justify-center">
                         {note.authorName.slice(0, 1).toUpperCase()}
                       </span>
                     )}
@@ -193,7 +193,7 @@ export function NotesView({
                         {note.authorName}
                       </button>
                       {showSupporterCrest && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded border border-[#8B5CF6] text-[var(--text-accent)]">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded border border-[var(--accent-border)] text-[var(--text-accent)]">
                           <Crown className="w-2.5 h-2.5" />
                           Supporter
                         </span>
@@ -248,7 +248,7 @@ export function NotesView({
                     onClick={() =>
                       onNavigate({ view: 'post', postId: note.quotedPostId! })
                     }
-                    className="w-full text-left p-3.5 border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-surface)] hover:border-[#8B5CF6] transition-colors flex items-center justify-between gap-3 cursor-pointer"
+                    className="w-full text-left p-3.5 border border-[var(--border-hairline)] rounded-lg bg-[var(--bg-surface)] hover:border-[var(--accent-border)] transition-colors flex items-center justify-between gap-3 cursor-pointer"
                   >
                     <div className="min-w-0">
                       <p className="text-xs text-[var(--text-accent-soft)] mb-0.5">

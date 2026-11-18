@@ -371,13 +371,13 @@ export function VoiceReaderBar({
     <>
       <div
         ref={inlineCardRef}
-        className="mb-7 p-4 sm:p-5 rounded-xl border border-[#8B5CF6]/60 bg-[var(--bg-surface)] space-y-4"
+        className="mb-7 p-4 sm:p-5 rounded-xl border border-[var(--accent-border)]/60 bg-[var(--bg-surface)] space-y-4"
         aria-label="Voice Reading Controls"
       >
         {/* Top Row: Title, Engine Toggle, Close */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-8 h-8 rounded-lg bg-[#6D28D9]/20 text-[var(--text-accent)] flex items-center justify-center shrink-0">
+            <span className="w-8 h-8 rounded-lg bg-[var(--accent-solid)]/20 text-[var(--text-accent)] flex items-center justify-center shrink-0">
               {isBuffering ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
@@ -406,7 +406,7 @@ export function VoiceReaderBar({
                 }
                 className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                   engine === 'studio'
-                    ? 'bg-[#6D28D9] text-white'
+                    ? 'bg-[var(--accent-solid)] text-white'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -418,7 +418,7 @@ export function VoiceReaderBar({
                 disabled={!speechSupported}
                 className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 ${
                   engine === 'device'
-                    ? 'bg-[#6D28D9] text-white'
+                    ? 'bg-[var(--accent-solid)] text-white'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -463,7 +463,7 @@ export function VoiceReaderBar({
               }
             }}
             aria-label="Jump to essay section"
-            className="w-full accent-[#8B5CF6] cursor-pointer"
+            className="w-full accent-[var(--accent-border)] cursor-pointer"
           />
         </div>
 
@@ -475,7 +475,7 @@ export function VoiceReaderBar({
               disabled={activeIdx <= 0}
               onClick={() => void playSection(Math.max(0, activeIdx - 1))}
               aria-label="Previous section"
-              className="p-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[#8B5CF6] disabled:opacity-40 cursor-pointer"
+              className="p-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] disabled:opacity-40 cursor-pointer"
             >
               <SkipBack className="w-3.5 h-3.5" />
             </button>
@@ -483,7 +483,7 @@ export function VoiceReaderBar({
             <button
               type="button"
               onClick={handleTogglePlay}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium bg-[#6D28D9] text-white rounded-lg hover:bg-[#7C3AED] transition-colors whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium bg-[var(--accent-solid)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap cursor-pointer"
             >
               {isBuffering ? (
                 <>
@@ -510,7 +510,7 @@ export function VoiceReaderBar({
                 void playSection(Math.min(segments.length - 1, activeIdx + 1))
               }
               aria-label="Next section"
-              className="p-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[#8B5CF6] disabled:opacity-40 cursor-pointer"
+              className="p-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] disabled:opacity-40 cursor-pointer"
             >
               <SkipForward className="w-3.5 h-3.5" />
             </button>
@@ -519,7 +519,7 @@ export function VoiceReaderBar({
               type="button"
               onClick={handleCycleRate}
               title="Playback speed"
-              className="px-2.5 py-2 text-xs font-mono font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-accent)] hover:border-[#8B5CF6] cursor-pointer tabular-nums"
+              className="px-2.5 py-2 text-xs font-mono font-medium rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-accent)] hover:border-[var(--accent-border)] cursor-pointer tabular-nums"
             >
               {rate}x
             </button>
@@ -530,7 +530,7 @@ export function VoiceReaderBar({
               aria-pressed={autoFollow}
               className={`px-2.5 py-2 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap cursor-pointer ${
                 autoFollow
-                  ? 'border-[#8B5CF6] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
+                  ? 'border-[var(--accent-border)] bg-[var(--bg-active-soft)] text-[var(--text-accent)]'
                   : 'border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-muted)]'
               }`}
             >
@@ -550,7 +550,7 @@ export function VoiceReaderBar({
                     studioVoiceRef.current = nextVoice;
                     if (isPlaying) void playSection(activeIdx);
                   }}
-                  className="px-2.5 py-1.5 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+                  className="px-2.5 py-1.5 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
                 >
                   {STUDIO_VOICES.map((v) => (
                     <option key={v.id} value={v.id}>
@@ -567,7 +567,7 @@ export function VoiceReaderBar({
                     styleRef.current = nextStyle;
                     if (isPlaying) void playSection(activeIdx);
                   }}
-                  className="px-2.5 py-1.5 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+                  className="px-2.5 py-1.5 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
                 >
                   {NARRATION_STYLES.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -584,7 +584,7 @@ export function VoiceReaderBar({
                   setSelectedDeviceVoiceUri(e.target.value);
                   if (isPlaying) void playSection(activeIdx);
                 }}
-                className="max-w-[240px] px-2.5 py-1.5 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#8B5CF6]"
+                className="max-w-[240px] px-2.5 py-1.5 text-xs bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-border)]"
               >
                 {deviceVoices.length === 0 ? (
                   <option value="">Default System Voice</option>
@@ -611,7 +611,7 @@ export function VoiceReaderBar({
                   handleSwitchEngine('device');
                   onNotify('Switched to Device Voice.');
                 }}
-                className="px-2.5 py-1 font-medium bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-primary)] rounded-md hover:border-[#8B5CF6] cursor-pointer whitespace-nowrap"
+                className="px-2.5 py-1 font-medium bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-primary)] rounded-md hover:border-[var(--accent-border)] cursor-pointer whitespace-nowrap"
               >
                 Switch to Device Voice
               </button>
@@ -625,7 +625,7 @@ export function VoiceReaderBar({
         <div
           role="region"
           aria-label="Floating Voice Reading Mini-Player"
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-xl bg-[var(--bg-surface)] border border-[#8B5CF6] rounded-xl shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-3"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-xl bg-[var(--bg-surface)] border border-[var(--accent-border)] rounded-xl shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-3"
         >
           <button
             type="button"
@@ -657,7 +657,7 @@ export function VoiceReaderBar({
               type="button"
               onClick={handleTogglePlay}
               aria-label={isPlaying ? 'Pause' : 'Play'}
-              className="p-2 rounded-lg bg-[#6D28D9] text-white hover:bg-[#7C3AED] cursor-pointer"
+              className="p-2 rounded-lg bg-[var(--accent-solid)] text-white hover:bg-[var(--accent-hover)] cursor-pointer"
             >
               {isBuffering ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
